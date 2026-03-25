@@ -1,8 +1,7 @@
 # DistrictDesk — System Architecture Design
 
 **Project:** DistrictDesk  
-**Document:** System Architecture Design  
-**Course:** CSE 499 – Senior Project  
+**Document:** System Architecture Design 
 **Author:** David Gosney  
 
 ---

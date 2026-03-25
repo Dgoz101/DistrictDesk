@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'core',
     'devices',
     'tickets',
+    'dashboard',
 ]
 
 MIDDLEWARE = [
@@ -94,5 +95,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'districtdesk@localhost')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL

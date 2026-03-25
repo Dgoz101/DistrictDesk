@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Delete category — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'tickets:category_list' %}">← Categories</a></p>
+
+  <section class="card card--form">
+    <h1 class="page-title">Delete category</h1>
+    <p>Are you sure you want to delete <strong>{{ object.name }}</strong>? This cannot be undone if no tickets reference it.</p>
+
+    <form method="post" class="form">
+      {% csrf_token %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Delete</button>
+        <a href="{% url 'tickets:category_list' %}" class="btn btn--ghost">Cancel</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

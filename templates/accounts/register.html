@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Create account — DistrictDesk{% endblock %}
+
+{% block content %}
+  <section class="card card--narrow">
+    <h1>Create account</h1>
+    <p class="muted">Register with your email and a password. You will be assigned the <strong>Standard User</strong> role.</p>
+
+    <form method="post" action="{% url 'accounts:register' %}" class="form" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <ul class="form-errors" role="alert">
+          {% for err in form.non_field_errors %}
+            <li>{{ err }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% for field in form %}
+        <div class="field{% if field.errors %} field--error{% endif %}">
+          <label class="field__label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}
+            <ul class="field-errors">{% for err in field.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Create account</button>
+      </div>
+    </form>
+
+    <p class="form-meta">
+      Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a>
+    </p>
+  </section>
+{% endblock %}

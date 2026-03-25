@@ -1,8 +1,8 @@
 # DistrictDesk — Scalability and Reliability Guide
 
 **Project:** DistrictDesk  
-**Document:** Scalability and Reliability  
-**Course:** CSE 499 – Senior Project  
+**Document:** Scalability and Reliability 
+**Author:** David Gosney  
 
 This document describes how to build and operate DistrictDesk for **scalability** (handling more users and load) and **reliability** (uptime, recoverability, and operational visibility). It is organized by phase: what to do now, and what to add as you grow.
 

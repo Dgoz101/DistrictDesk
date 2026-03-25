@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Devices — DistrictDesk{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1 class="page-title">Device inventory</h1>
+    <a class="btn btn--primary" href="{% url 'devices:create' %}">Add device</a>
+  </div>
+  <p class="muted">Manage asset tags, types, status, assignment, and location (administrators only).</p>
+
+  {% if devices %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Asset tag</th>
+            <th scope="col">Type</th>
+            <th scope="col">Model</th>
+            <th scope="col">Status</th>
+            <th scope="col">Assigned user</th>
+            <th scope="col">Location</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in devices %}
+            <tr>
+              <td><strong>{{ d.asset_tag }}</strong></td>
+              <td>{{ d.device_type.name }}</td>
+              <td>{{ d.model|default:"—" }}</td>
+              <td><span class="badge">{{ d.status.name }}</span></td>
+              <td>
+                {% if d.assigned_user %}
+                  {{ d.assigned_user.email|default:d.assigned_user.username }}
+                {% else %}
+                  <span class="muted">—</span>
+                {% endif %}
+              </td>
+              <td>{{ d.location.name|default:"—" }}</td>
+              <td><a href="{% url 'devices:edit' d.pk %}">Edit</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+      <nav class="pagination" aria-label="Device pages">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span class="pagination__meta">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <p class="muted">No devices yet. <a href="{% url 'devices:create' %}">Add the first device</a>.</p>
+  {% endif %}
+{% endblock %}

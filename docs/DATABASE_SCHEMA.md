@@ -1,9 +1,8 @@
 # DistrictDesk — Database Schema Design
 
 **Project:** DistrictDesk  
-**Document:** Database Schema Design  
-**Course:** CSE 499 – Senior Project  
-**Author:** David Gosney  
+**Document:** Database Schema Design 
+**Author:** David Gosney    
 
 ---
 

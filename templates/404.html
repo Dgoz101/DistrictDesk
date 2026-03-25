@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found — DistrictDesk{% endblock %}
+
+{% block content %}
+  <section class="card card--narrow error-page" aria-labelledby="error-title">
+    <h1 class="page-title" id="error-title">Page not found</h1>
+    <p class="muted">The page you requested does not exist or has been moved.</p>
+    <p><a href="{% url 'home' %}">Return home</a></p>
+  </section>
+{% endblock %}

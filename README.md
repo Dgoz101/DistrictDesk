@@ -33,6 +33,60 @@ Additional project documentation is available in the `docs/` folder:
 - `docs/DATABASE_SCHEMA.md`
 - `docs/SYSTEM_ARCHITECTURE.md`
 - `docs/SCALABILITY_AND_RELIABILITY.md`
+- `docs/USER_FACING_IMPLEMENTATION_PLAN.md` (user-facing plan; Phases 0–8 implemented)
+
+## Roles and permissions (RBAC)
+
+- **Administrator** — access to the **dashboard** (`/dashboard/`: ticket/device charts and KPIs; optional JSON at `/dashboard/api/summary/`), **device inventory** (list, add, edit under `/devices/`), **user management** at `/accounts/users/` (list and edit role / active status), **ticket settings** at `/tickets/settings/` (categories and priority levels CRUD), and the full ticket workflow on list/detail (assign, update status/priority/category, internal comments, search/filter/sort on the ticket list). Enforced with `accounts.mixins.AdminRequiredMixin` (class-based views) and `accounts.decorators.admin_required` (function views).
+- **Standard User** — ticket flows for their own requests (Phase 3+). Cannot access administrator-only URLs (HTTP 403).
+
+### Administrative management (FR-38–FR-39)
+
+- **Custom app UI:** `/accounts/users/` lists users; `/accounts/users/<id>/edit/` edits role and active flag (you cannot deactivate your own account). `/tickets/settings/` links to category and priority CRUD; deleting a category or priority that is still referenced by tickets shows an error and leaves the row in place.
+- **Django admin (`/admin/`):** Still available for staff operations such as password hashes, `is_staff` / superuser flags, device type/status lookups, and other model maintenance not exposed in the custom UI.
+
+## URL map (main app routes)
+
+| Path | Purpose |
+|------|--------|
+| `/` | Home (redirects by auth role) |
+| `/health/` | JSON health check |
+| `/admin/` | Django admin |
+| `/accounts/register/`, `/accounts/login/`, `/accounts/logout/` | Registration and session auth |
+| `/accounts/password-reset/`, … | Password reset flow |
+| `/accounts/users/`, `/accounts/users/<id>/edit/` | User list / edit (administrators) |
+| `/tickets/`, `/tickets/new/` | Ticket list and create |
+| `/tickets/settings/`, `/tickets/settings/categories/…`, `/tickets/settings/priorities/…` | Ticket lookup CRUD (administrators) |
+| `/tickets/<id>/`, `/tickets/<id>/admin/update/`, `/assign/`, `/comment/` | Ticket detail and admin actions |
+| `/devices/`, `/devices/new/`, `/devices/<id>/edit/` | Device inventory (administrators) |
+| `/dashboard/`, `/dashboard/api/summary/` | Dashboard and optional JSON summary (administrators) |
+
+## Environment variables
+
+| Variable | Purpose |
+|----------|---------|
+| `DJANGO_ENV` | `development` or `production` (selects settings module) |
+| `DJANGO_SECRET_KEY` | Secret key (required in production; see `config/settings/production.py`) |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated hosts (production; development can override) |
+| `DJANGO_USE_SQLITE` | Set to `1` to use SQLite instead of PostgreSQL |
+| `DJANGO_DB_NAME`, `DJANGO_DB_USER`, `DJANGO_DB_PASSWORD`, `DJANGO_DB_HOST`, `DJANGO_DB_PORT` | PostgreSQL connection when not using SQLite |
+| `DEFAULT_FROM_EMAIL` | From address for outbound mail (password reset, etc.) |
+
+Run instructions: see **Setup**, **Database Configuration**, **Run Migrations**, **Seed Initial Data**, and **Create an Admin User** above. For production, set `DJANGO_ENV=production`, a strong `DJANGO_SECRET_KEY`, and real `DJANGO_ALLOWED_HOSTS`, then run `python manage.py collectstatic` so `STATIC_ROOT` is populated behind a reverse proxy or static file server.
+
+## Testing
+
+Run automated checks and tests (SQLite):
+
+```bash
+python manage.py check
+set DJANGO_USE_SQLITE=1
+python manage.py test core.tests
+```
+
+On **Python 3.14**, tests that render HTML via the Django test client (including custom **404** with `DEBUG=False`) are **skipped** because of a known Django 4.2 compatibility issue with template context copying. Use **Python 3.12 or 3.13** to run the full suite including those tests, or wait for a Django release that fixes this.
+
+With **`DEBUG=False`** (production), Django serves **`templates/404.html`** and **`templates/500.html`** for missing URLs and unhandled server errors, respectively.
 
 ## Requirements
 
@@ -112,6 +166,8 @@ Create a superuser:
 python manage.py createsuperuser
 ```
 
+Use the **Username** field as your sign-in email if you want to use `/accounts/login/` (e.g. set username and email to the same address). New accounts created via **Create account** always use email as the username.
+
 Then start the development server:
 
 ```bash
@@ -143,13 +199,15 @@ DistrictDesk supports environment-specific settings:
 - `config/settings/development.py`
 - `config/settings/production.py`
 
-For production, set:
+For production, set (see **Environment variables** for the full list):
 
 ```bash
 set DJANGO_ENV=production
 set DJANGO_SECRET_KEY=your-secret-key
 set DJANGO_ALLOWED_HOSTS=yourdomain.com,localhost
 ```
+
+After configuration, run `python manage.py collectstatic` (non-interactive deploy) so collected static files can be served efficiently.
 
 ## Health Check
 

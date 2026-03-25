@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Server error — DistrictDesk{% endblock %}
+
+{% block content %}
+  <section class="card card--narrow error-page" aria-labelledby="error-title">
+    <h1 class="page-title" id="error-title">Something went wrong</h1>
+    <p class="muted">An unexpected error occurred. Please try again later.</p>
+    <p><a href="{% url 'home' %}">Return home</a></p>
+  </section>
+{% endblock %}

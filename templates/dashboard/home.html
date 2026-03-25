@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard — DistrictDesk{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="muted dashboard__meta">Analytics for tickets and devices · updated {{ dashboard_payload.generated_at|date:"Y-m-d H:i" }}</p>
+  </div>
+
+  {% with s=dashboard_payload.summary %}
+    <section class="dashboard-kpis" aria-label="Summary figures">
+      <div class="dashboard-kpi">
+        <span class="dashboard-kpi__value">{{ s.total_tickets }}</span>
+        <span class="dashboard-kpi__label">Total tickets</span>
+      </div>
+      <div class="dashboard-kpi">
+        <span class="dashboard-kpi__value">{{ s.open_tickets }}</span>
+        <span class="dashboard-kpi__label">Open / in progress</span>
+      </div>
+      <div class="dashboard-kpi">
+        <span class="dashboard-kpi__value">
+          {% if s.avg_resolution_hours is not None %}{{ s.avg_resolution_hours }} h{% else %}—{% endif %}
+        </span>
+        <span class="dashboard-kpi__label">Avg. resolution time</span>
+      </div>
+      <div class="dashboard-kpi">
+        <span class="dashboard-kpi__value">{{ s.total_devices }}</span>
+        <span class="dashboard-kpi__label">Devices</span>
+      </div>
+    </section>
+  {% endwith %}
+
+  <div class="dashboard-charts">
+    <div class="dashboard-chart-card">
+      <h2 class="dashboard-chart-card__title">Tickets by status</h2>
+      <div class="dashboard-chart-card__canvas"><canvas id="chart-tickets-status" aria-label="Tickets by status"></canvas></div>
+    </div>
+    <div class="dashboard-chart-card">
+      <h2 class="dashboard-chart-card__title">Tickets by category</h2>
+      <div class="dashboard-chart-card__canvas"><canvas id="chart-tickets-category" aria-label="Tickets by category"></canvas></div>
+    </div>
+    <div class="dashboard-chart-card dashboard-chart-card--wide">
+      <h2 class="dashboard-chart-card__title">New tickets (last 14 days)</h2>
+      <div class="dashboard-chart-card__canvas"><canvas id="chart-tickets-trend" aria-label="New tickets trend"></canvas></div>
+    </div>
+    <div class="dashboard-chart-card">
+      <h2 class="dashboard-chart-card__title">Devices by type</h2>
+      <div class="dashboard-chart-card__canvas"><canvas id="chart-devices-type" aria-label="Devices by type"></canvas></div>
+    </div>
+    <div class="dashboard-chart-card">
+      <h2 class="dashboard-chart-card__title">Devices by status</h2>
+      <div class="dashboard-chart-card__canvas"><canvas id="chart-devices-status" aria-label="Devices by status"></canvas></div>
+    </div>
+  </div>
+
+  {{ dashboard_payload|json_script:"dashboard-data" }}
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script src="{% static 'js/charts.js' %}"></script>
+{% endblock %}

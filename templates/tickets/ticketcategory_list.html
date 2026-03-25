@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket categories — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'tickets:settings_hub' %}">← Ticket settings</a></p>
+
+  <div class="page-head">
+    <h1 class="page-title">Ticket categories</h1>
+    <a class="btn btn--primary" href="{% url 'tickets:category_create' %}">Add category</a>
+  </div>
+
+  {% if categories %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Sort order</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in categories %}
+            <tr>
+              <td>{{ c.name }}</td>
+              <td>{{ c.sort_order }}</td>
+              <td>
+                <a href="{% url 'tickets:category_edit' c.pk %}">Edit</a>
+                ·
+                <a href="{% url 'tickets:category_delete' c.pk %}">Delete</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+      <nav class="pagination" aria-label="Category pages">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span class="pagination__meta">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <p class="muted">No categories yet. <a href="{% url 'tickets:category_create' %}">Add one</a>.</p>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Edit user — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'accounts:user_list' %}">← Back to users</a></p>
+
+  <section class="card card--form">
+    <h1 class="page-title">Edit user</h1>
+    <p class="muted">{{ edit_user.email|default:edit_user.username }}</p>
+
+    <form method="post" class="form" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <ul class="form-errors" role="alert">
+          {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+      {% for field in form %}
+        <div class="field{% if field.errors %} field--error{% endif %}">
+          <label class="field__label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}
+            <ul class="field-errors">{% for err in field.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Save</button>
+        <a href="{% url 'accounts:user_list' %}" class="btn btn--ghost">Cancel</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

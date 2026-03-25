@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ticket.title }} — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'tickets:list' %}">← Back to tickets</a></p>
+
+  <article class="card ticket-detail">
+    <header class="ticket-detail__header">
+      <h1 class="page-title">{{ ticket.title }}</h1>
+      <p class="ticket-detail__meta muted">
+        Submitted {{ ticket.created_at|date:"Y-m-d H:i" }}
+        {% if ticket.submitter %}
+          · {{ ticket.submitter.email|default:ticket.submitter.username }}
+        {% endif %}
+      </p>
+      <div class="ticket-badges">
+        <span class="badge">{{ ticket.status }}</span>
+        <span class="badge badge--muted">{{ ticket.priority.name }}</span>
+        <span class="badge badge--muted">{{ ticket.category.name }}</span>
+      </div>
+    </header>
+
+    <section class="ticket-detail__section">
+      <h2>Description</h2>
+      <div class="ticket-detail__body">{{ ticket.description|linebreaks }}</div>
+    </section>
+
+    {% if ticket.device %}
+      <section class="ticket-detail__section">
+        <h2>Device</h2>
+        <p>{{ ticket.device.asset_tag }} — {{ ticket.device.device_type.name }}</p>
+      </section>
+    {% endif %}
+
+    {% if ticket.location %}
+      <section class="ticket-detail__section">
+        <h2>Location</h2>
+        <p>{{ ticket.location.name }}</p>
+      </section>
+    {% endif %}
+
+    {% if ticket.contact_info %}
+      <section class="ticket-detail__section">
+        <h2>Contact</h2>
+        <p>{{ ticket.contact_info }}</p>
+      </section>
+    {% endif %}
+
+    {% if user.is_administrator %}
+      <section class="ticket-detail__section ticket-admin">
+        <h2>Administrator actions</h2>
+        <div class="ticket-admin__grid">
+          <form class="card card--admin" method="post" action="{% url 'tickets:admin_update' ticket.pk %}">
+            {% csrf_token %}
+            <h3 class="ticket-admin__form-title">Update ticket</h3>
+            <p class="muted ticket-admin__hint">Status, priority, and category</p>
+            {% for field in admin_update_form %}
+              <div class="form-row">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<span class="form-error">{{ field.errors.0 }}</span>{% endif %}
+              </div>
+            {% endfor %}
+            <button type="submit" class="btn btn--primary">Save changes</button>
+          </form>
+
+          <form class="card card--admin" method="post" action="{% url 'tickets:assign' ticket.pk %}">
+            {% csrf_token %}
+            <h3 class="ticket-admin__form-title">Assignment</h3>
+            {% if current_assignment %}
+              <p class="muted ticket-admin__hint">
+                Currently: {{ current_assignment.assigned_to.email|default:current_assignment.assigned_to.username }}
+              </p>
+            {% else %}
+              <p class="muted ticket-admin__hint">No one assigned yet.</p>
+            {% endif %}
+            <div class="form-row">
+              <label for="{{ assign_form.assigned_to.id_for_label }}">{{ assign_form.assigned_to.label }}</label>
+              {{ assign_form.assigned_to }}
+              {% if assign_form.assigned_to.errors %}
+                <span class="form-error">{{ assign_form.assigned_to.errors.0 }}</span>
+              {% endif %}
+            </div>
+            <button type="submit" class="btn btn--primary">Assign</button>
+          </form>
+
+          <form class="card card--admin card--admin-wide" method="post" action="{% url 'tickets:comment_add' ticket.pk %}">
+            {% csrf_token %}
+            <h3 class="ticket-admin__form-title">Add comment</h3>
+            <div class="form-row">
+              <label for="{{ comment_form.body.id_for_label }}">{{ comment_form.body.label }}</label>
+              {{ comment_form.body }}
+              {% if comment_form.body.errors %}
+                <span class="form-error">{{ comment_form.body.errors.0 }}</span>
+              {% endif %}
+            </div>
+            <div class="form-row form-row--checkbox">
+              {{ comment_form.is_internal }}
+              <label for="{{ comment_form.is_internal.id_for_label }}">{{ comment_form.is_internal.label }}</label>
+            </div>
+            <button type="submit" class="btn btn--primary">Post comment</button>
+          </form>
+        </div>
+      </section>
+    {% endif %}
+
+    <section class="ticket-detail__section">
+      <h2>Status history</h2>
+      {% if ticket.status_history.all %}
+        <ol class="history-list">
+          {% for row in ticket.status_history.all %}
+            <li>
+              <time datetime="{{ row.changed_at|date:'c' }}">{{ row.changed_at|date:"Y-m-d H:i" }}</time>
+              —
+              {% if row.old_status %}{{ row.old_status }} → {% endif %}{{ row.new_status }}
+              {% if row.changed_by %}
+                <span class="muted">({{ row.changed_by.email|default:row.changed_by.username }})</span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="muted">No history recorded.</p>
+      {% endif %}
+    </section>
+
+    <section class="ticket-detail__section">
+      <h2>Comments</h2>
+      {% with comments=ticket.comments.all %}
+        {% if comments %}
+          <ul class="comment-list">
+            {% for comment in comments %}
+              {% if user.is_administrator or not comment.is_internal %}
+                <li class="comment-list__item">
+                  <p class="comment-list__meta muted">
+                    {{ comment.author.email|default:comment.author.username }}
+                    · {{ comment.created_at|date:"Y-m-d H:i" }}
+                    {% if comment.is_internal %}<span class="badge badge--small">Internal</span>{% endif %}
+                  </p>
+                  <div>{{ comment.body|linebreaks }}</div>
+                </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">No comments yet.</p>
+        {% endif %}
+      {% endwith %}
+    </section>
+  </article>
+{% endblock %}
