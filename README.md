@@ -94,6 +94,20 @@ $env:DJANGO_USE_SQLITE = "1"
 python manage.py test core.tests
 ```
 
+You can also run the same suite with `pytest`:
+
+```powershell
+$env:DJANGO_USE_SQLITE = "1"
+python -m pytest
+```
+
+Run a focused module:
+
+```powershell
+$env:DJANGO_USE_SQLITE = "1"
+python -m pytest core/tests/test_phase2_rbac.py -q
+```
+
 If you omit `DJANGO_USE_SQLITE`, Django uses PostgreSQL from `DJANGO_DB_*` (and tests will fail without a working password on `localhost:5432`).
 
 The full **`core.tests`** suite (including HTML GET tests) is expected to pass on **Python 3.14** with **Django 5.2 LTS** (the 404 test uses `assertContains(..., status_code=404)` for non-200 responses).
