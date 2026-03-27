@@ -2,8 +2,6 @@
 Smoke tests for Phase 0: routing, health check, auth redirects, role-based redirects.
 """
 import json
-import sys
-import unittest
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
@@ -11,9 +9,6 @@ from django.test import Client, TestCase
 from accounts.models import Role
 
 User = get_user_model()
-
-# Django 4.2 test client fails copying template context on Python 3.14+ (AttributeError on Context.__copy__).
-_PY314_TEMPLATE_TEST_SKIP = sys.version_info >= (3, 14)
 
 
 class Phase0URLTests(TestCase):
@@ -42,10 +37,6 @@ class Phase0URLTests(TestCase):
             status_code=302,
         )
 
-    @unittest.skipIf(
-        _PY314_TEMPLATE_TEST_SKIP,
-        'Django 4.2 test client + Python 3.14+: template context copy error; use Python 3.12-3.13 for full HTML tests.',
-    )
     def test_login_placeholder_renders(self):
         response = self.client.get('/accounts/login/')
         self.assertEqual(response.status_code, 200)
@@ -114,10 +105,6 @@ class Phase0URLTests(TestCase):
             status_code=302,
         )
 
-    @unittest.skipIf(
-        _PY314_TEMPLATE_TEST_SKIP,
-        'Django 4.2 test client + Python 3.14+: template context copy error; use Python 3.12-3.13 for full HTML tests.',
-    )
     def test_tickets_placeholder_authenticated(self):
         user = User.objects.create_user(
             username='standard4',

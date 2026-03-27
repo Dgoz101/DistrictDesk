@@ -1,6 +1,4 @@
 """Phase 3: ticket create, list (scoped), detail, status history."""
-import sys
-import unittest
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -9,11 +7,6 @@ from accounts.models import Role
 from tickets.models import Ticket, TicketCategory, PriorityLevel, TicketStatusHistory
 
 User = get_user_model()
-
-_SKIP_HTML_GET = sys.version_info >= (3, 14)
-_SKIP_REASON = (
-    'Django 4.2 test client + Python 3.14+: template context copy error; use Python 3.12-3.13 for GET HTML tests.'
-)
 
 
 class Phase3TicketTests(TestCase):
@@ -67,7 +60,6 @@ class Phase3TicketTests(TestCase):
         self.assertEqual(row.new_status, Ticket.Status.OPEN)
         self.assertEqual(row.changed_by_id, self.user_std.id)
 
-    @unittest.skipIf(_SKIP_HTML_GET, _SKIP_REASON)
     def test_list_shows_only_own_for_standard_user(self):
         Ticket.objects.create(
             title='Mine',
@@ -91,7 +83,6 @@ class Phase3TicketTests(TestCase):
         self.assertContains(response, 'Mine')
         self.assertNotContains(response, 'Theirs')
 
-    @unittest.skipIf(_SKIP_HTML_GET, _SKIP_REASON)
     def test_list_shows_all_for_admin(self):
         Ticket.objects.create(
             title='Mine',
@@ -114,7 +105,6 @@ class Phase3TicketTests(TestCase):
         self.assertContains(response, 'Mine')
         self.assertContains(response, 'Theirs')
 
-    @unittest.skipIf(_SKIP_HTML_GET, _SKIP_REASON)
     def test_detail_submitter_allowed(self):
         t = Ticket.objects.create(
             title='T',
@@ -147,7 +137,6 @@ class Phase3TicketTests(TestCase):
         r = self.client.get(f'/tickets/{t.pk}/')
         self.assertEqual(r.status_code, 403)
 
-    @unittest.skipIf(_SKIP_HTML_GET, _SKIP_REASON)
     def test_detail_admin_allowed(self):
         t = Ticket.objects.create(
             title='Other user ticket',

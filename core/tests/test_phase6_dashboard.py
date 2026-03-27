@@ -1,7 +1,5 @@
 """Phase 6: dashboard aggregates and JSON API (admin-only)."""
 import json
-import sys
-import unittest
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -11,11 +9,6 @@ from devices.models import Device, DeviceStatus, DeviceType
 from tickets.models import Ticket, TicketCategory, PriorityLevel
 
 User = get_user_model()
-
-_SKIP_HTML_GET = sys.version_info >= (3, 14)
-_SKIP_REASON = (
-    'Django 4.2 test client + Python 3.14+: template context copy error; use Python 3.12-3.13 for GET HTML tests.'
-)
 
 
 class Phase6DashboardTests(TestCase):
@@ -79,7 +72,6 @@ class Phase6DashboardTests(TestCase):
         r = self.client.get('/dashboard/api/summary/')
         self.assertEqual(r.status_code, 403)
 
-    @unittest.skipIf(_SKIP_HTML_GET, _SKIP_REASON)
     def test_dashboard_home_renders_for_admin(self):
         self.client.login(username='d6adm@example.com', password='pass12345')
         r = self.client.get('/dashboard/')

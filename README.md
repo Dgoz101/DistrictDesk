@@ -22,7 +22,7 @@ By combining ticket management and device tracking in one application, DistrictD
 
 ## Tech Stack
 
-- **Backend:** Django 4.2+
+- **Backend:** Django 5.2 LTS
 - **Database:** PostgreSQL
 - **Local Development Option:** SQLite
 
@@ -78,13 +78,25 @@ Run instructions: see **Setup**, **Database Configuration**, **Run Migrations**,
 
 Run automated checks and tests (SQLite):
 
+**Command Prompt (`cmd.exe`):**
+
 ```bash
 python manage.py check
 set DJANGO_USE_SQLITE=1
 python manage.py test core.tests
 ```
 
-On **Python 3.14**, tests that render HTML via the Django test client (including custom **404** with `DEBUG=False`) are **skipped** because of a known Django 4.2 compatibility issue with template context copying. Use **Python 3.12 or 3.13** to run the full suite including those tests, or wait for a Django release that fixes this.
+**PowerShell:** `set DJANGO_USE_SQLITE=1` does **not** set an environment variable for Python. Use:
+
+```powershell
+python manage.py check
+$env:DJANGO_USE_SQLITE = "1"
+python manage.py test core.tests
+```
+
+If you omit `DJANGO_USE_SQLITE`, Django uses PostgreSQL from `DJANGO_DB_*` (and tests will fail without a working password on `localhost:5432`).
+
+The full **`core.tests`** suite (including HTML GET tests) is expected to pass on **Python 3.14** with **Django 5.2 LTS** (the 404 test uses `assertContains(..., status_code=404)` for non-200 responses).
 
 With **`DEBUG=False`** (production), Django serves **`templates/404.html`** and **`templates/500.html`** for missing URLs and unhandled server errors, respectively.
 

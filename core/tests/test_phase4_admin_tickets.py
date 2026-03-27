@@ -1,6 +1,4 @@
-"""Phase 4: admin ticket assign, update, comments, filters (POST-focused for Py3.14 client)."""
-import sys
-import unittest
+"""Phase 4: admin ticket assign, update, comments, filters."""
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -15,11 +13,6 @@ from tickets.models import (
 )
 
 User = get_user_model()
-
-_SKIP_HTML_GET = sys.version_info >= (3, 14)
-_SKIP_REASON = (
-    'Django 4.2 test client + Python 3.14+: template context copy error; use Python 3.12-3.13 for GET HTML tests.'
-)
 
 
 class Phase4AdminTicketTests(TestCase):
@@ -146,7 +139,6 @@ class Phase4AdminTicketTests(TestCase):
             )
             self.assertEqual(r.status_code, 403, msg=url)
 
-    @unittest.skipIf(_SKIP_HTML_GET, _SKIP_REASON)
     def test_admin_list_filter_search_in_html(self):
         Ticket.objects.create(
             title='Alpha printer',
