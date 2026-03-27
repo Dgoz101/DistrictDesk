@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from .rbac import user_is_administrator, user_is_standard_user
+
 
 class Role(models.Model):
     """Role for RBAC: Standard User, Administrator."""
@@ -31,12 +33,8 @@ class User(AbstractUser):
 
     @property
     def is_administrator(self):
-        if not self.role:
-            return False
-        return self.role.name.lower() == 'administrator'
+        return user_is_administrator(self)
 
     @property
     def is_standard_user(self):
-        if not self.role:
-            return True
-        return self.role.name.lower() in ('standard user', 'standard')
+        return user_is_standard_user(self)

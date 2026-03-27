@@ -6,8 +6,9 @@ from django.http import HttpResponse
 from django.test import RequestFactory, TestCase
 
 from accounts.decorators import admin_required
-from accounts.mixins import AdminRequiredMixin
+from accounts.mixins import AdminRequiredMixin, RoleRequiredMixin
 from accounts.models import Role
+from accounts.rbac import ROLE_NAME_ADMINISTRATOR, ROLE_NAME_STANDARD_USER, user_has_role
 
 User = get_user_model()
 
@@ -83,3 +84,52 @@ class Phase2RBACTests(TestCase):
         user.save()
         request.user.refresh_from_db()
         self.assertFalse(view.test_func())
+
+    def test_role_required_mixin_allows_configured_role(self):
+        factory = RequestFactory()
+        request = factory.get('/')
+        user = User.objects.create_user(
+            username='roleadm@example.com',
+            email='roleadm@example.com',
+            password='x',
+        )
+        user.role = self.role_admin
+        user.save()
+        request.user = user
+
+        class V(RoleRequiredMixin):
+            allowed_roles = (ROLE_NAME_ADMINISTRATOR,)
+
+        view = V()
+        view.request = request
+        self.assertTrue(view.test_func())
+
+    def test_role_required_mixin_blocks_other_role(self):
+        factory = RequestFactory()
+        request = factory.get('/')
+        user = User.objects.create_user(
+            username='rolestd@example.com',
+            email='rolestd@example.com',
+            password='x',
+        )
+        user.role = self.role_standard
+        user.save()
+        request.user = user
+
+        class V(RoleRequiredMixin):
+            allowed_roles = (ROLE_NAME_ADMINISTRATOR,)
+
+        view = V()
+        view.request = request
+        self.assertFalse(view.test_func())
+
+    def test_user_has_role_matches_constants(self):
+        user = User.objects.create_user(
+            username='roles@example.com',
+            email='roles@example.com',
+            password='x',
+        )
+        user.role = self.role_standard
+        user.save()
+        self.assertTrue(user_has_role(user, ROLE_NAME_STANDARD_USER))
+        self.assertFalse(user_has_role(user, ROLE_NAME_ADMINISTRATOR))
