@@ -19,6 +19,7 @@ Reliability is the foundation: a system that crashes or loses data does not scal
   - `DJANGO_DB_*` (database credentials)
   - Any API keys (e.g. email for password reset)
 - **Separate settings by environment.** Use `config/settings/base.py`, `development.py`, and `production.py`; set `DJANGO_SETTINGS_MODULE` per environment. In production: `DEBUG = False`, strict `ALLOWED_HOSTS`, HTTPS-only.
+- **Production fail-fast:** With `DJANGO_ENV=production`, `config/settings/production.py` requires non-empty `DJANGO_SECRET_KEY` (not the development placeholder) and non-empty `DJANGO_ALLOWED_HOSTS`, and sets secure cookies, HSTS, and SSL redirect. See the README **Production Configuration** section.
 - **12-factor style:** One codebase, config via env; same app runs in dev and prod with different env.
 
 ### 1.2 Database Durability and Backups

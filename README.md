@@ -66,8 +66,8 @@ Additional project documentation is available in the `docs/` folder:
 | Variable | Purpose |
 |----------|---------|
 | `DJANGO_ENV` | `development` or `production` (selects settings module) |
-| `DJANGO_SECRET_KEY` | Secret key (required in production; see `config/settings/production.py`) |
-| `DJANGO_ALLOWED_HOSTS` | Comma-separated hosts (production; development can override) |
+| `DJANGO_SECRET_KEY` | Secret key. **Required** when `DJANGO_ENV=production`: must be non-empty and must not be the development placeholder (`django-insecure-change-me-in-production`). |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames. **Required** when `DJANGO_ENV=production`: at least one hostname; no empty deploy. |
 | `DJANGO_USE_SQLITE` | Set to `1` to use SQLite instead of PostgreSQL |
 | `DJANGO_DB_NAME`, `DJANGO_DB_USER`, `DJANGO_DB_PASSWORD`, `DJANGO_DB_HOST`, `DJANGO_DB_PORT` | PostgreSQL connection when not using SQLite |
 | `DEFAULT_FROM_EMAIL` | From address for outbound mail (password reset, etc.) |
@@ -231,13 +231,26 @@ DistrictDesk supports environment-specific settings:
 - `config/settings/development.py`
 - `config/settings/production.py`
 
-For production, set (see **Environment variables** for the full list):
+When `DJANGO_ENV=production`, [`config/settings/production.py`](config/settings/production.py) **fails fast** if `DJANGO_SECRET_KEY` or `DJANGO_ALLOWED_HOSTS` is missing or invalid, and enables HTTPS-oriented defaults: secure session/CSRF cookies, HSTS, SSL redirect, and `SECURE_PROXY_SSL_HEADER` for reverse proxies that terminate TLS.
+
+**PowerShell example:**
+
+```powershell
+$env:DJANGO_ENV = "production"
+$env:DJANGO_SECRET_KEY = "<generate-a-long-random-string>"
+$env:DJANGO_ALLOWED_HOSTS = "app.example.com,www.example.com"
+# PostgreSQL (omit DJANGO_USE_SQLITE or set it to something other than 1)
+```
+
+**cmd example:**
 
 ```bash
 set DJANGO_ENV=production
-set DJANGO_SECRET_KEY=your-secret-key
-set DJANGO_ALLOWED_HOSTS=yourdomain.com,localhost
+set DJANGO_SECRET_KEY=your-long-random-secret
+set DJANGO_ALLOWED_HOSTS=app.example.com,www.example.com
 ```
+
+Put the app behind HTTPS. If TLS terminates at a reverse proxy (Nginx, Traefik, etc.), configure the proxy to pass `X-Forwarded-Proto: https` so Django’s `SECURE_PROXY_SSL_HEADER` matches the client scheme. Misconfigured HTTPS or proxy headers can cause redirect loops when `SECURE_SSL_REDIRECT` is enabled.
 
 After configuration, run `python manage.py collectstatic` (non-interactive deploy) so collected static files can be served efficiently.
 
