@@ -98,6 +98,12 @@ If you omit `DJANGO_USE_SQLITE`, Django uses PostgreSQL from `DJANGO_DB_*` (and 
 
 The full **`core.tests`** suite (including HTML GET tests) is expected to pass on **Python 3.14** with **Django 5.2 LTS** (the 404 test uses `assertContains(..., status_code=404)` for non-200 responses).
 
+### Role-based access (RBAC)
+
+- **Roles** are stored in the `Role` model (seeded names include **Standard User** and **Administrator**). The custom user model exposes `is_administrator` and `is_standard_user`; shared helpers live in [`accounts/rbac.py`](accounts/rbac.py).
+- **Server-side enforcement**: views that require the **Administrator** role use `AdminRequiredMixin` (class-based views) or the `@admin_required` decorator (function views). Unauthenticated users are **redirected to login**; authenticated users with the wrong role get **HTTP 403** (`raise_exception=True` on the mixin).
+- **UI**: [`templates/base.html`](templates/base.html) shows links to the dashboard, devices, user management, ticket settings, and Django admin only when `user.is_administrator`. That is for clarity only; **authorization is always enforced in views**, not by hiding links.
+
 With **`DEBUG=False`** (production), Django serves **`templates/404.html`** and **`templates/500.html`** for missing URLs and unhandled server errors, respectively.
 
 ## Requirements

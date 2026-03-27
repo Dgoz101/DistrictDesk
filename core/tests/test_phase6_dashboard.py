@@ -67,10 +67,11 @@ class Phase6DashboardTests(TestCase):
         r = self.client.get('/dashboard/api/summary/')
         self.assertEqual(r.status_code, 403)
 
-    def test_api_summary_forbidden_anonymous(self):
-        """AdminRequiredMixin uses raise_exception; unauthenticated users get 403 (not redirect)."""
+    def test_api_summary_redirects_anonymous_to_login(self):
+        """Unauthenticated requests are redirected to login (same as other admin routes)."""
         r = self.client.get('/dashboard/api/summary/')
-        self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.status_code, 302)
+        self.assertIn('/accounts/login/', r['Location'])
 
     def test_dashboard_home_renders_for_admin(self):
         self.client.login(username='d6adm@example.com', password='pass12345')

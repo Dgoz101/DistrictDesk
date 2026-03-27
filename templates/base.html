@@ -22,8 +22,8 @@
             <a href="{% url 'devices:list' %}">Devices</a>
             <a href="{% url 'accounts:user_list' %}">Users</a>
             <a href="{% url 'tickets:settings_hub' %}">Ticket settings</a>
+            <a href="{% url 'admin:index' %}">Django admin</a>
           {% endif %}
-          <a href="{% url 'admin:index' %}">Admin</a>
           <form method="post" action="{% url 'accounts:logout' %}" class="site-nav__logout">
             {% csrf_token %}
             <button type="submit" class="site-nav__btn">Sign out</button>
