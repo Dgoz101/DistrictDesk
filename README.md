@@ -26,14 +26,41 @@ By combining ticket management and device tracking in one application, DistrictD
 - **Database:** PostgreSQL
 - **Local Development Option:** SQLite
 
+## Quick start
+
+From the project root, with Python 3.10+:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Use SQLite for a fast local setup. On **PowerShell**, set `DJANGO_USE_SQLITE` before the Django commands below (`$env:DJANGO_USE_SQLITE = "1"`). On **cmd**, use `set DJANGO_USE_SQLITE=1`.
+
+```bash
+python manage.py migrate
+python manage.py seed_roles
+python manage.py seed_ticket_lookups
+python manage.py seed_device_lookups
+python manage.py createsuperuser
+python manage.py runserver
+```
+
+Open `http://127.0.0.1:8000/admin/`, log in, and assign your user the **Administrator** role so the dashboard, devices, and admin ticket tools are available.
+
+**More detail:** step-by-step setup (PostgreSQL, environment variables, production, testing, and daily use) is in **[`docs/HOW_TO_USE_DISTRICTDESK.md`](docs/HOW_TO_USE_DISTRICTDESK.md)**.
+
 ## Documentation
 
 Additional project documentation is available in the `docs/` folder:
 
+- `docs/HOW_TO_USE_DISTRICTDESK.md` — **setup, configuration, running, and daily use** (step-by-step)
 - `docs/DATABASE_SCHEMA.md`
 - `docs/SYSTEM_ARCHITECTURE.md`
 - `docs/SCALABILITY_AND_RELIABILITY.md`
 - `docs/USER_FACING_IMPLEMENTATION_PLAN.md` (user-facing plan; Phases 0–8 implemented)
+- `docs/FR_TRACEABILITY.md` — **FR-1–FR-39** mapped to code and tests
 
 ## Roles and permissions (RBAC)
 

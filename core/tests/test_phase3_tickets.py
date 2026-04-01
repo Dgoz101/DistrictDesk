@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from accounts.models import Role
+from core.models import Location
+from devices.models import Device, DeviceStatus, DeviceType
 from tickets.models import Ticket, TicketCategory, PriorityLevel, TicketStatusHistory
 
 User = get_user_model()
@@ -16,6 +18,15 @@ class Phase3TicketTests(TestCase):
         cls.pri = PriorityLevel.objects.create(name='Medium', sort_order=1)
         cls.role_std, _ = Role.objects.get_or_create(name='Standard User')
         cls.role_admin, _ = Role.objects.get_or_create(name='Administrator')
+        cls.loc = Location.objects.create(name='Room 101')
+        cls.dtype = DeviceType.objects.create(name='Laptop')
+        cls.dstatus = DeviceStatus.objects.create(name='Active')
+        cls.dev = Device.objects.create(
+            asset_tag='ASSET-OPT-1',
+            device_type=cls.dtype,
+            status=cls.dstatus,
+            location=cls.loc,
+        )
 
     def setUp(self):
         self.user_std = User.objects.create_user(
@@ -59,6 +70,43 @@ class Phase3TicketTests(TestCase):
         row = ticket.status_history.first()
         self.assertEqual(row.new_status, Ticket.Status.OPEN)
         self.assertEqual(row.changed_by_id, self.user_std.id)
+
+    def test_create_ticket_with_optional_device_location_contact(self):
+        self.client.login(username='u1@example.com', password='pass12345')
+        response = self.client.post(
+            '/tickets/new/',
+            {
+                'title': 'Optional fields ticket',
+                'description': 'With device, location, contact',
+                'category': self.cat.pk,
+                'priority': self.pri.pk,
+                'device': self.dev.pk,
+                'location': self.loc.pk,
+                'contact_info': 'Call ext 555',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        ticket = Ticket.objects.get(title='Optional fields ticket')
+        self.assertEqual(ticket.device_id, self.dev.pk)
+        self.assertEqual(ticket.location_id, self.loc.pk)
+        self.assertEqual(ticket.contact_info, 'Call ext 555')
+
+    def test_create_ticket_without_optional_fields(self):
+        self.client.login(username='u1@example.com', password='pass12345')
+        response = self.client.post(
+            '/tickets/new/',
+            {
+                'title': 'Minimal ticket',
+                'description': 'No optional fields',
+                'category': self.cat.pk,
+                'priority': self.pri.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        ticket = Ticket.objects.get(title='Minimal ticket')
+        self.assertIsNone(ticket.device_id)
+        self.assertIsNone(ticket.location_id)
+        self.assertEqual(ticket.contact_info, '')
 
     def test_list_shows_only_own_for_standard_user(self):
         Ticket.objects.create(
