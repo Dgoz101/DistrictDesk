@@ -59,6 +59,9 @@ class Phase6DashboardTests(TestCase):
         self.assertIn('chart_data', data)
         self.assertEqual(data['summary']['total_tickets'], 1)
         self.assertEqual(data['summary']['total_devices'], 1)
+        self.assertIn('warranty_expiring_count', data['summary'])
+        self.assertEqual(data['summary']['warranty_expiring_count'], 0)
+        self.assertIn('warranty_expiring_preview', data)
         self.assertIn('tickets_by_status', data['chart_data'])
         self.assertIn('tickets_trend', data['chart_data'])
 

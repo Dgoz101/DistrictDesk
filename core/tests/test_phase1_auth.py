@@ -59,6 +59,20 @@ class Phase1AuthTests(TestCase):
         self.assertEqual(match.namespace, 'accounts')
         self.assertEqual(match.url_name, 'password_reset')
 
+    def test_email_preferences_requires_login(self):
+        r = self.client.get('/accounts/email-preferences/')
+        self.assertEqual(r.status_code, 302)
+
+    def test_email_preferences_get_ok_when_logged_in(self):
+        User.objects.create_user(
+            username='pref@example.com',
+            email='pref@example.com',
+            password='pass12345',
+        )
+        self.client.login(username='pref@example.com', password='pass12345')
+        r = self.client.get('/accounts/email-preferences/')
+        self.assertEqual(r.status_code, 200)
+
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class Phase1PasswordResetFlowTests(TestCase):

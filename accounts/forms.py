@@ -59,6 +59,23 @@ class RegisterForm(forms.ModelForm):
         return user
 
 
+class UserEmailPreferencesForm(forms.ModelForm):
+    """Signed-in user: opt in or out of ticket update emails."""
+
+    class Meta:
+        model = User
+        fields = ['email_ticket_updates']
+        labels = {
+            'email_ticket_updates': 'Email me when my tickets are updated',
+        }
+        help_texts = {
+            'email_ticket_updates': (
+                'You will get an email when staff change status, category, or priority; '
+                'assign your ticket; or post a non-internal comment.'
+            ),
+        }
+
+
 class UserAdminForm(forms.ModelForm):
     """Administrator: adjust role and active flag (FR-38). Password changes use Django admin or reset flow."""
 

@@ -13,6 +13,7 @@ DistrictDesk supports core IT operations by allowing users to:
 - Submit and manage IT support tickets
 - Organize tickets by category, priority, and status
 - Track assignments, comments, and ticket history
+- Optional **email notifications** when staff update a ticket (status, category, priority, assignment, or non-internal comments); each user can turn this off under **Email preferences** (`/accounts/email-preferences/`)
 - Manage device records, types, and device statuses
 - Support role-based access for different kinds of users
 - Monitor application health through a health check endpoint
@@ -85,7 +86,7 @@ Additional project documentation is available in the `docs/` folder:
 | `/tickets/`, `/tickets/new/` | Ticket list and create |
 | `/tickets/settings/`, `/tickets/settings/categories/…`, `/tickets/settings/priorities/…` | Ticket lookup CRUD (administrators) |
 | `/tickets/<id>/`, `/tickets/<id>/admin/update/`, `/assign/`, `/comment/` | Ticket detail and admin actions |
-| `/devices/`, `/devices/new/`, `/devices/<id>/edit/` | Device inventory (administrators) |
+| `/devices/`, `/devices/new/`, `/devices/<id>/` (detail, checkout), `/devices/import/`, `/devices/export.csv`, `/devices/print-selected/` (POST), `/devices/<id>/print/`, `/devices/<id>/edit/`, `/devices/report/<uuid>/` (public read-only) | Device inventory, **CSV import/export**, loaner checkout, **QR labels**, and warranty filters (administrators except public report) |
 | `/dashboard/`, `/dashboard/api/summary/` | Dashboard and optional JSON summary (administrators) |
 
 ## Environment variables
@@ -97,6 +98,7 @@ Additional project documentation is available in the `docs/` folder:
 | `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames. **Required** when `DJANGO_ENV=production`: at least one hostname; no empty deploy. |
 | `DJANGO_USE_SQLITE` | Set to `1` to use SQLite instead of PostgreSQL |
 | `DJANGO_DB_NAME`, `DJANGO_DB_USER`, `DJANGO_DB_PASSWORD`, `DJANGO_DB_HOST`, `DJANGO_DB_PORT` | PostgreSQL connection when not using SQLite |
+| `PUBLIC_BASE_URL` | Optional absolute site base (no trailing slash), e.g. `https://helpdesk.school.edu`, used when generating QR links for device labels if request host headers are wrong behind a proxy |
 | `DEFAULT_FROM_EMAIL` | From address for outbound mail (password reset, etc.) |
 
 Run instructions: see **Setup**, **Database Configuration**, **Run Migrations**, **Seed Initial Data**, and **Create an Admin User** above. For production, set `DJANGO_ENV=production`, a strong `DJANGO_SECRET_KEY`, and real `DJANGO_ALLOWED_HOSTS`, then run `python manage.py collectstatic` so `STATIC_ROOT` is populated behind a reverse proxy or static file server.

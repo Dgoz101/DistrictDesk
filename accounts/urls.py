@@ -6,12 +6,14 @@ from .views import (
     DistrictDeskLogoutView,
     RegisterView,
     UserAdminUpdateView,
+    UserEmailPreferencesView,
     UserListView,
 )
 
 app_name = 'accounts'
 
 urlpatterns = [
+    path('email-preferences/', UserEmailPreferencesView.as_view(), name='email_preferences'),
     path('users/', UserListView.as_view(), name='user_list'),
     path('users/<int:pk>/edit/', UserAdminUpdateView.as_view(), name='user_edit'),
     path('register/', RegisterView.as_view(), name='register'),

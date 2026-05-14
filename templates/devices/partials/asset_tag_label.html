@@ -1,0 +1,32 @@
+<article class="asset-tag-label" aria-label="Asset tag label for {{ device.asset_tag }}">
+  <div class="asset-tag-label__row">
+    <div class="asset-tag-label__main">
+      <div class="asset-tag-label__brand">DistrictDesk</div>
+      <div class="asset-tag-label__tag">{{ device.asset_tag }}</div>
+      <dl class="asset-tag-label__meta">
+        <dt>Type</dt>
+        <dd>{{ device.device_type.name }}</dd>
+        <dt>Status</dt>
+        <dd>{{ device.status.name }}</dd>
+        {% if device.model %}
+          <dt>Model</dt>
+          <dd>{{ device.model }}</dd>
+        {% endif %}
+        {% if device.serial_number %}
+          <dt>Serial</dt>
+          <dd>{{ device.serial_number }}</dd>
+        {% endif %}
+        {% if device.location %}
+          <dt>Location</dt>
+          <dd>{{ device.location.name }}</dd>
+        {% endif %}
+      </dl>
+    </div>
+    {% if qr_data_uri %}
+      <div class="asset-tag-label__qr">
+        <img src="{{ qr_data_uri }}" width="120" height="120" alt="QR link to device report">
+        <span class="asset-tag-label__qr-caption">Scan for info</span>
+      </div>
+    {% endif %}
+  </div>
+</article>

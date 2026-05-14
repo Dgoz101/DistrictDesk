@@ -91,12 +91,29 @@ def get_dashboard_data():
     dstatus_labels = [r['status__name'] or '—' for r in dstatus_rows]
     dstatus_counts = [r['count'] for r in dstatus_rows]
 
+    warranty_end = today + timedelta(days=90)
+    warranty_qs = Device.objects.filter(
+        warranty_end_date__isnull=False,
+        warranty_end_date__gte=today,
+        warranty_end_date__lte=warranty_end,
+    )
+    warranty_expiring_count = warranty_qs.count()
+    warranty_expiring_preview = [
+        {
+            'id': d.pk,
+            'asset_tag': d.asset_tag,
+            'warranty_end_date': d.warranty_end_date.isoformat(),
+        }
+        for d in warranty_qs.order_by('warranty_end_date')[:10]
+    ]
+
     return {
         'summary': {
             'total_tickets': total_tickets,
             'open_tickets': open_tickets,
             'total_devices': total_devices,
             'avg_resolution_hours': avg_resolution_hours,
+            'warranty_expiring_count': warranty_expiring_count,
         },
         'chart_data': {
             'tickets_by_status': {'labels': status_labels, 'counts': status_counts},
@@ -105,5 +122,6 @@ def get_dashboard_data():
             'devices_by_type': {'labels': dtype_labels, 'counts': dtype_counts},
             'devices_by_status': {'labels': dstatus_labels, 'counts': dstatus_counts},
         },
+        'warranty_expiring_preview': warranty_expiring_preview,
         'generated_at': timezone.now(),
     }

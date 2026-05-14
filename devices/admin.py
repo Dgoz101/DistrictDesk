@@ -14,6 +14,14 @@ class DeviceStatusAdmin(admin.ModelAdmin):
 
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('asset_tag', 'device_type', 'model', 'status', 'assigned_user', 'location')
+    list_display = (
+        'asset_tag',
+        'device_type',
+        'model',
+        'status',
+        'warranty_end_date',
+        'assigned_user',
+        'location',
+    )
     list_filter = ('device_type', 'status')
     search_fields = ('asset_tag', 'model', 'serial_number')

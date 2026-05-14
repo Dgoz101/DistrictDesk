@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Device {{ device.asset_tag }} — DistrictDesk{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1 class="page-title">Device report</h1>
+    <p class="muted">Read-only summary (no sign-in required).</p>
+  </div>
+
+  <section class="card">
+    <dl class="device-detail-dl">
+      <dt>Asset tag</dt><dd><strong>{{ device.asset_tag }}</strong></dd>
+      <dt>Type</dt><dd>{{ device.device_type.name }}</dd>
+      <dt>Status</dt><dd>{{ device.status.name }}</dd>
+      <dt>Model</dt><dd>{{ device.model|default:"—" }}</dd>
+      <dt>Serial</dt><dd>{{ device.serial_number|default:"—" }}</dd>
+      <dt>Location</dt><dd>{{ device.location.name|default:"—" }}</dd>
+    </dl>
+
+    <p style="margin-top: 1.25rem;">
+      <a class="btn btn--primary" href="{{ open_ticket_url }}">Open a support ticket (signed in)</a>
+    </p>
+    <p class="muted" style="margin-top: 0.75rem;">
+      Not signed in?
+      <a href="{{ open_ticket_login_url }}">Sign in</a> to submit a ticket with this device prefilled.
+    </p>
+  </section>
+{% endblock %}

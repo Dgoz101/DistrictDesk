@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Print labels — DistrictDesk{% endblock %}
+
+{% block extra_css %}
+{% include "devices/partials/asset_tag_print_styles.html" %}
+{% endblock %}
+
+{% block content %}
+  <div class="no-print asset-tag-print__toolbar">
+    <a class="back-link" href="{% url 'devices:list' %}">← Back to devices</a>
+    <button type="button" class="btn btn--primary" id="asset-tag-print-btn">Print all</button>
+  </div>
+
+  <p class="muted no-print" style="margin-bottom: 1rem;">
+    {{ label_items|length }} label{{ label_items|length|pluralize }} — each label starts on a new page when printing.
+  </p>
+
+  {% for item in label_items %}
+    <div class="asset-tag-label-wrap">
+      {% include "devices/partials/asset_tag_label.html" with device=item.device report_url=item.report_url qr_data_uri=item.qr_data_uri %}
+    </div>
+  {% endfor %}
+
+  <p class="muted no-print" style="max-width: 28rem; margin-top: 1rem;">
+    Use your browser’s print dialog. For adhesive labels, choose the correct paper size or scale to fit your label sheet.
+  </p>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.getElementById('asset-tag-print-btn')?.addEventListener('click', function () {
+    window.print();
+  });
+</script>
+{% endblock %}

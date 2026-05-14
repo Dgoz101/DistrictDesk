@@ -15,6 +15,7 @@ from .forms import (
     TicketCommentForm,
     TicketForm,
 )
+from . import email_updates
 from .models import Ticket, TicketAssignment, TicketComment
 from .services import apply_admin_ticket_update, assign_ticket, record_ticket_created
 
@@ -107,6 +108,13 @@ class TicketCreateView(LoginRequiredMixin, CreateView):
     form_class = TicketForm
     template_name = 'tickets/ticket_form.html'
 
+    def get_initial(self):
+        initial = super().get_initial()
+        raw = self.request.GET.get('device')
+        if raw is not None and str(raw).strip().isdigit():
+            initial['device'] = int(str(raw).strip())
+        return initial
+
     def form_valid(self, form):
         form.instance.submitter = self.request.user
         form.instance.status = Ticket.Status.OPEN
@@ -163,6 +171,8 @@ class TicketAdminUpdateView(AdminRequiredMixin, View):
     def post(self, request, pk):
         ticket = get_object_or_404(Ticket, pk=pk)
         old_status = ticket.status
+        old_category = ticket.category
+        old_priority = ticket.priority
         form = TicketAdminUpdateForm(request.POST, instance=ticket)
         if form.is_valid():
             cd = form.cleaned_data
@@ -174,6 +184,15 @@ class TicketAdminUpdateView(AdminRequiredMixin, View):
                 new_status=cd['status'],
                 old_status=old_status,
             )
+            summary = []
+            if old_status != cd['status']:
+                summary.append(f'Status: {old_status} → {cd["status"]}')
+            if old_category.pk != cd['category'].pk:
+                summary.append(f'Category: {old_category.name} → {cd["category"].name}')
+            if old_priority.pk != cd['priority'].pk:
+                summary.append(f'Priority: {old_priority.name} → {cd["priority"].name}')
+            if summary:
+                email_updates.notify_submitter_ticket_changes(ticket, request, summary)
             messages.success(request, 'Ticket updated.')
         else:
             messages.error(request, 'Could not update ticket. Please check the fields.')
@@ -187,7 +206,10 @@ class TicketAssignView(AdminRequiredMixin, View):
         ticket = get_object_or_404(Ticket, pk=pk)
         form = TicketAssignForm(request.POST)
         if form.is_valid():
-            assign_ticket(ticket, form.cleaned_data['assigned_to'], request.user)
+            assignee = form.cleaned_data['assigned_to']
+            assign_ticket(ticket, assignee, request.user)
+            email_updates.notify_submitter_assigned(ticket, request, assignee)
+            email_updates.notify_assignee_assigned(ticket, request, assignee)
             messages.success(request, 'Assignment updated.')
         else:
             messages.error(request, 'Could not assign ticket. Choose a valid user.')
@@ -201,12 +223,18 @@ class TicketCommentAddView(AdminRequiredMixin, View):
         ticket = get_object_or_404(Ticket, pk=pk)
         form = TicketCommentForm(request.POST)
         if form.is_valid():
+            body = form.cleaned_data['body']
+            is_internal = form.cleaned_data['is_internal']
             TicketComment.objects.create(
                 ticket=ticket,
                 author=request.user,
-                body=form.cleaned_data['body'],
-                is_internal=form.cleaned_data['is_internal'],
+                body=body,
+                is_internal=is_internal,
             )
+            if not is_internal:
+                email_updates.notify_submitter_public_comment(
+                    ticket, request, request.user, body
+                )
             messages.success(request, 'Comment added.')
         else:
             messages.error(request, 'Could not add comment.')

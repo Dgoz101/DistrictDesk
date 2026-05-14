@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -7,7 +8,7 @@ from django.views.generic import FormView, ListView, UpdateView
 
 from accounts.mixins import AdminRequiredMixin
 
-from .forms import EmailLoginForm, RegisterForm, UserAdminForm
+from .forms import EmailLoginForm, RegisterForm, UserAdminForm, UserEmailPreferencesForm
 
 User = get_user_model()
 
@@ -38,6 +39,24 @@ class RegisterView(FormView):
             self.request,
             'Your account was created. You can sign in now.',
         )
+        return super().form_valid(form)
+
+
+class UserEmailPreferencesView(LoginRequiredMixin, FormView):
+    """Allow any signed-in user to toggle ticket update emails."""
+
+    form_class = UserEmailPreferencesForm
+    template_name = 'accounts/email_preferences.html'
+    success_url = reverse_lazy('accounts:email_preferences')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['instance'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, 'Your email preferences were saved.')
         return super().form_valid(form)
 
 

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Import devices — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'devices:list' %}">← Back to devices</a></p>
+
+  <section class="card card--form">
+    <h1 class="page-title">Import devices (CSV)</h1>
+    <p class="muted">
+      Upload a UTF-8 CSV. Rows are matched by <code>asset_tag</code> (create or update).
+      <code>device_type</code>, <code>status</code>, and <code>location</code> are resolved by name (case-insensitive).
+      <code>assigned_user</code> matches email first, then username.
+    </p>
+    <p class="muted">
+      <a href="{% url 'devices:export_csv' %}">Download current inventory as CSV</a> for a column template.
+    </p>
+
+    <form method="post" enctype="multipart/form-data" class="form">
+      {% csrf_token %}
+      <div class="field">
+        <label class="field__label" for="id_file">CSV file</label>
+        <input id="id_file" name="file" type="file" accept=".csv,text/csv" required>
+      </div>
+      <div class="field">
+        <label>
+          <input type="checkbox" name="dry_run" value="1" {% if request.GET.dry_run == '1' %}checked{% endif %}>
+          Dry run (validate only; do not save)
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Upload</button>
+        <a href="{% url 'devices:list' %}" class="btn btn--ghost">Cancel</a>
+      </div>
+    </form>
+
+    {% if result %}
+      <h2 class="page-title" style="font-size: 1.05rem; margin-top: 1.5rem;">Results</h2>
+      <p>
+        {% if result.dry_run %}Dry run —{% endif %}
+        Created: <strong>{{ result.created }}</strong>,
+        Updated: <strong>{{ result.updated }}</strong>,
+        Errors: <strong>{{ result.errors|length }}</strong>
+      </p>
+      {% if result.errors %}
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th scope="col">Line</th><th scope="col">Asset tag</th><th scope="col">Message</th></tr>
+            </thead>
+            <tbody>
+              {% for e in result.errors %}
+                <tr>
+                  <td>{{ e.line }}</td>
+                  <td>{{ e.asset_tag|default:"—" }}</td>
+                  <td>{{ e.message }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    {% endif %}
+  </section>
+{% endblock %}

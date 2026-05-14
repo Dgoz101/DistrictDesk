@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}{{ device.asset_tag }} — Devices — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'devices:list' %}">← Back to devices</a></p>
+
+  <div class="page-head">
+    <h1 class="page-title">{{ device.asset_tag }}</h1>
+    <div class="page-head__actions">
+      <a class="btn btn--ghost" href="{% url 'devices:edit' device.pk %}">Edit</a>
+      <a class="btn btn--ghost" href="{% url 'devices:print_label' device.pk %}">Print tag</a>
+    </div>
+  </div>
+
+  <section class="card" style="margin-bottom: 1.25rem;">
+    <h2 class="page-title" style="font-size: 1.1rem;">Inventory</h2>
+    <dl class="device-detail-dl">
+      <dt>Type</dt><dd>{{ device.device_type.name }}</dd>
+      <dt>Status</dt><dd><span class="badge">{{ device.status.name }}</span></dd>
+      <dt>Model</dt><dd>{{ device.model|default:"—" }}</dd>
+      <dt>Serial</dt><dd>{{ device.serial_number|default:"—" }}</dd>
+      <dt>Assigned (custodian)</dt>
+      <dd>
+        {% if device.assigned_user %}
+          {{ device.assigned_user.email|default:device.assigned_user.username }}
+        {% else %}
+          <span class="muted">—</span>
+        {% endif %}
+      </dd>
+      <dt>Location</dt><dd>{{ device.location.name|default:"—" }}</dd>
+      <dt>Purchase date</dt><dd>{{ device.purchase_date|default:"—" }}</dd>
+      <dt>Warranty ends</dt><dd>{{ device.warranty_end_date|default:"—" }}</dd>
+      <dt>Vendor / PO</dt>
+      <dd>
+        {% if device.purchase_vendor or device.purchase_order %}
+          {{ device.purchase_vendor|default:"" }}{% if device.purchase_vendor and device.purchase_order %} · {% endif %}{{ device.purchase_order|default:"" }}
+        {% else %}
+          <span class="muted">—</span>
+        {% endif %}
+      </dd>
+    </dl>
+  </section>
+
+  <section class="card" style="margin-bottom: 1.25rem;">
+    <h2 class="page-title" style="font-size: 1.1rem;">Loaner checkout</h2>
+    <p class="muted" style="margin-top: 0;">
+      Checkout records who is <strong>temporarily</strong> holding the device. Assigned user above is the long-term custodian in inventory.
+    </p>
+    {% if open_checkout %}
+      <p>
+        <strong>Out:</strong> {{ open_checkout.checked_out_to.email|default:open_checkout.checked_out_to.username }}
+        since {{ open_checkout.checked_out_at|date:"Y-m-d H:i" }}
+        {% if open_checkout.due_at %} · <strong>Due:</strong> {{ open_checkout.due_at|date:"Y-m-d H:i" }}{% endif %}
+      </p>
+      {% if open_checkout.notes %}<p class="muted">{{ open_checkout.notes }}</p>{% endif %}
+      <form method="post" class="form-actions" style="margin-top: 0.75rem;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="return">
+        <button type="submit" class="btn btn--primary">Mark returned</button>
+      </form>
+    {% else %}
+      <form method="post" class="form" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="checkout">
+        {% for field in checkout_form %}
+          <div class="field{% if field.errors %} field--error{% endif %}">
+            <label class="field__label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <ul class="field-errors">{% for err in field.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary">Check out</button>
+        </div>
+      </form>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2 class="page-title" style="font-size: 1.1rem;">Checkout history</h2>
+    {% if checkouts %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">To</th>
+              <th scope="col">Out</th>
+              <th scope="col">Due</th>
+              <th scope="col">Returned</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in checkouts %}
+              <tr>
+                <td>{{ c.checked_out_to.email|default:c.checked_out_to.username }}</td>
+                <td>{{ c.checked_out_at|date:"Y-m-d H:i" }}</td>
+                <td>{% if c.due_at %}{{ c.due_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
+                <td>{% if c.returned_at %}{{ c.returned_at|date:"Y-m-d H:i" }}{% else %}<span class="badge">Open</span>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">No checkout history yet.</p>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -37,6 +37,8 @@ class Phase2RBACMatrixTests(TestCase):
             '/dashboard/',
             '/dashboard/api/summary/',
             '/devices/',
+            '/devices/import/',
+            '/devices/export.csv',
             '/accounts/users/',
             '/tickets/settings/',
         ):
@@ -51,6 +53,8 @@ class Phase2RBACMatrixTests(TestCase):
             '/dashboard/',
             '/dashboard/api/summary/',
             '/devices/',
+            '/devices/import/',
+            '/devices/export.csv',
             '/accounts/users/',
             '/tickets/settings/',
         ):
@@ -62,6 +66,8 @@ class Phase2RBACMatrixTests(TestCase):
         for path in (
             '/dashboard/',
             '/devices/',
+            '/devices/import/',
+            '/devices/export.csv',
             '/accounts/users/',
             '/tickets/settings/',
         ):

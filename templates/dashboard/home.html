@@ -29,7 +29,37 @@
         <span class="dashboard-kpi__value">{{ s.total_devices }}</span>
         <span class="dashboard-kpi__label">Devices</span>
       </div>
+      <div class="dashboard-kpi">
+        <span class="dashboard-kpi__value">{{ s.warranty_expiring_count }}</span>
+        <span class="dashboard-kpi__label">Warranties expiring (90d)</span>
+      </div>
     </section>
+  {% endwith %}
+
+  {% with prev=dashboard_payload.warranty_expiring_preview %}
+    {% if prev %}
+      <section class="card" style="margin-bottom: 1.5rem;">
+        <h2 class="page-title" style="font-size: 1.1rem;">Warranties expiring within 90 days</h2>
+        <p class="muted" style="margin-top: 0;">
+          <a href="{% url 'devices:list' %}?warranty_within=90">View filtered device list</a>
+        </p>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th scope="col">Asset tag</th><th scope="col">Warranty end</th></tr>
+            </thead>
+            <tbody>
+              {% for row in prev %}
+                <tr>
+                  <td><a href="{% url 'devices:detail' row.id %}">{{ row.asset_tag }}</a></td>
+                  <td>{{ row.warranty_end_date }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
   {% endwith %}
 
   <div class="dashboard-charts">

@@ -17,6 +17,7 @@
         {% if user.is_authenticated %}
           <a href="{% url 'tickets:list' %}">Tickets</a>
           <a href="{% url 'tickets:create' %}">New ticket</a>
+          <a href="{% url 'accounts:email_preferences' %}">Email preferences</a>
           {% if user.is_administrator %}
             <a href="{% url 'dashboard:home' %}">Dashboard</a>
             <a href="{% url 'devices:list' %}">Devices</a>

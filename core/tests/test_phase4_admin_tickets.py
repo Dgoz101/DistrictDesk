@@ -1,7 +1,8 @@
 """Phase 4: admin ticket assign, update, comments, filters."""
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core import mail
+from django.test import TestCase, override_settings
 
 from accounts.models import Role
 from tickets.models import (
@@ -65,6 +66,104 @@ class Phase4AdminTicketTests(TestCase):
         self.assertEqual(t.status, Ticket.Status.RESOLVED)
         self.assertIsNotNone(t.closed_at)
 
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_admin_update_sends_email_when_submitter_opted_in(self):
+        self.user_std.email_ticket_updates = True
+        self.user_std.save()
+        t = Ticket.objects.create(
+            title='Need fix',
+            description='desc',
+            category=self.cat_hw,
+            priority=self.pri_low,
+            status=Ticket.Status.OPEN,
+            submitter=self.user_std,
+        )
+        mail.outbox.clear()
+        self.client.login(username='p4adm@example.com', password='pass12345')
+        r = self.client.post(
+            f'/tickets/{t.pk}/admin/update/',
+            {
+                'status': Ticket.Status.RESOLVED,
+                'priority': self.pri_low.pk,
+                'category': self.cat_hw.pk,
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['p4u1@example.com'])
+        self.assertIn(f'Ticket #{t.pk}', mail.outbox[0].subject)
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_admin_update_skips_email_when_submitter_opted_out(self):
+        self.user_std.email_ticket_updates = False
+        self.user_std.save()
+        t = Ticket.objects.create(
+            title='No mail',
+            description='desc',
+            category=self.cat_hw,
+            priority=self.pri_low,
+            status=Ticket.Status.OPEN,
+            submitter=self.user_std,
+        )
+        mail.outbox.clear()
+        self.client.login(username='p4adm@example.com', password='pass12345')
+        self.client.post(
+            f'/tickets/{t.pk}/admin/update/',
+            {
+                'status': Ticket.Status.RESOLVED,
+                'priority': self.pri_low.pk,
+                'category': self.cat_hw.pk,
+            },
+        )
+        self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_admin_assign_sends_email_to_submitter_and_assignee(self):
+        self.user_std.email_ticket_updates = True
+        self.user_std.save()
+        self.user_adm.email_ticket_updates = True
+        self.user_adm.save()
+        t = Ticket.objects.create(
+            title='Assign me',
+            description='d',
+            category=self.cat_hw,
+            priority=self.pri_low,
+            status=Ticket.Status.OPEN,
+            submitter=self.user_std,
+        )
+        mail.outbox.clear()
+        self.client.login(username='p4adm@example.com', password='pass12345')
+        self.client.post(
+            f'/tickets/{t.pk}/assign/',
+            {'assigned_to': self.user_adm.pk},
+        )
+        self.assertEqual(len(mail.outbox), 2)
+        recipients = {tuple(m.to) for m in mail.outbox}
+        self.assertIn(('p4u1@example.com',), recipients)
+        self.assertIn(('p4adm@example.com',), recipients)
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_admin_assign_skips_duplicate_email_if_submitter_is_assignee(self):
+        """Assigning to yourself should not send two assignee/submitter emails."""
+        self.user_std.email_ticket_updates = True
+        self.user_std.save()
+        t = Ticket.objects.create(
+            title='Self assign',
+            description='d',
+            category=self.cat_hw,
+            priority=self.pri_low,
+            status=Ticket.Status.OPEN,
+            submitter=self.user_std,
+        )
+        mail.outbox.clear()
+        self.client.login(username='p4adm@example.com', password='pass12345')
+        self.client.post(
+            f'/tickets/{t.pk}/assign/',
+            {'assigned_to': self.user_std.pk},
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['p4u1@example.com'])
+
     def test_admin_assign_moves_open_to_assigned(self):
         t = Ticket.objects.create(
             title='Assign me',
@@ -107,6 +206,48 @@ class Phase4AdminTicketTests(TestCase):
         self.assertEqual(c.body, 'Fixed the cable.')
         self.assertTrue(c.is_internal)
         self.assertEqual(c.author_id, self.user_adm.id)
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_internal_comment_does_not_email_submitter(self):
+        self.user_std.email_ticket_updates = True
+        self.user_std.save()
+        t = Ticket.objects.create(
+            title='C',
+            description='d',
+            category=self.cat_hw,
+            priority=self.pri_low,
+            status=Ticket.Status.IN_PROGRESS,
+            submitter=self.user_std,
+        )
+        mail.outbox.clear()
+        self.client.login(username='p4adm@example.com', password='pass12345')
+        self.client.post(
+            f'/tickets/{t.pk}/comment/',
+            {'body': 'Fixed the cable.', 'is_internal': 'on'},
+        )
+        self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_public_comment_emails_submitter(self):
+        self.user_std.email_ticket_updates = True
+        self.user_std.save()
+        t = Ticket.objects.create(
+            title='C',
+            description='d',
+            category=self.cat_hw,
+            priority=self.pri_low,
+            status=Ticket.Status.IN_PROGRESS,
+            submitter=self.user_std,
+        )
+        mail.outbox.clear()
+        self.client.login(username='p4adm@example.com', password='pass12345')
+        self.client.post(
+            f'/tickets/{t.pk}/comment/',
+            {'body': 'Please try rebooting once more.', 'is_internal': ''},
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['p4u1@example.com'])
+        self.assertIn('rebooting', mail.outbox[0].body)
 
     def test_standard_user_admin_posts_forbidden(self):
         t = Ticket.objects.create(

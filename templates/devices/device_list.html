@@ -3,60 +3,140 @@
 {% block title %}Devices — DistrictDesk{% endblock %}
 
 {% block content %}
-  <div class="page-head">
-    <h1 class="page-title">Device inventory</h1>
-    <a class="btn btn--primary" href="{% url 'devices:create' %}">Add device</a>
-  </div>
-  <p class="muted">Manage asset tags, types, status, assignment, and location (administrators only).</p>
-
   {% if devices %}
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th scope="col">Asset tag</th>
-            <th scope="col">Type</th>
-            <th scope="col">Model</th>
-            <th scope="col">Status</th>
-            <th scope="col">Assigned user</th>
-            <th scope="col">Location</th>
-            <th scope="col"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for d in devices %}
+    <form method="post" action="{% url 'devices:print_bulk' %}" id="device-print-bulk-form">
+      {% csrf_token %}
+      <div class="page-head">
+        <h1 class="page-title">Device inventory</h1>
+        <div class="page-head__actions">
+          <button type="submit" class="btn btn--secondary" id="device-print-selected-btn">
+            Print selected
+          </button>
+          <a class="btn btn--secondary" href="{% url 'devices:export_csv' %}">Export CSV</a>
+          <a class="btn btn--secondary" href="{% url 'devices:import' %}">Import CSV</a>
+          <a class="btn btn--primary" href="{% url 'devices:create' %}">Add device</a>
+        </div>
+      </div>
+      <p class="muted">
+        Manage asset tags, types, status, assignment, and location (administrators only).
+        Select rows and use <strong>Print selected</strong> for a multi-label print view (current page only).
+      </p>
+
+      <div class="no-print" style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+        <span class="muted">Warranty:</span>
+        <a href="{% url 'devices:list' %}" class="btn btn--ghost">All</a>
+        <a href="{% url 'devices:list' %}?warranty_within=90" class="btn btn--ghost">Expiring ≤ 90 days</a>
+        {% if warranty_within %}<span class="muted">(filter active)</span>{% endif %}
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
             <tr>
-              <td><strong>{{ d.asset_tag }}</strong></td>
-              <td>{{ d.device_type.name }}</td>
-              <td>{{ d.model|default:"—" }}</td>
-              <td><span class="badge">{{ d.status.name }}</span></td>
-              <td>
-                {% if d.assigned_user %}
-                  {{ d.assigned_user.email|default:d.assigned_user.username }}
-                {% else %}
-                  <span class="muted">—</span>
-                {% endif %}
-              </td>
-              <td>{{ d.location.name|default:"—" }}</td>
-              <td><a href="{% url 'devices:edit' d.pk %}">Edit</a></td>
+              <th scope="col" class="data-table__check">
+                <input type="checkbox" id="device-select-all" aria-label="Select all devices on this page">
+              </th>
+              <th scope="col">Asset tag</th>
+              <th scope="col">Type</th>
+              <th scope="col">Model</th>
+              <th scope="col">Status</th>
+              <th scope="col">Warranty end</th>
+              <th scope="col">Assigned user</th>
+              <th scope="col">Location</th>
+              <th scope="col">Actions</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {% for d in devices %}
+              <tr>
+                <td class="data-table__check">
+                  <input type="checkbox" name="device_ids" value="{{ d.pk }}" aria-label="Select {{ d.asset_tag }}">
+                </td>
+                <td><strong>{{ d.asset_tag }}</strong></td>
+                <td>{{ d.device_type.name }}</td>
+                <td>{{ d.model|default:"—" }}</td>
+                <td><span class="badge">{{ d.status.name }}</span></td>
+                <td>{{ d.warranty_end_date|default:"—" }}</td>
+                <td>
+                  {% if d.assigned_user %}
+                    {{ d.assigned_user.email|default:d.assigned_user.username }}
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+                <td>{{ d.location.name|default:"—" }}</td>
+                <td>
+                  <a href="{% url 'devices:detail' d.pk %}">View</a>
+                  ·
+                  <a href="{% url 'devices:edit' d.pk %}">Edit</a>
+                  ·
+                  <a href="{% url 'devices:print_label' d.pk %}">Print tag</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
 
     {% if is_paginated %}
       <nav class="pagination" aria-label="Device pages">
         {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+          <a href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
         {% endif %}
         <span class="pagination__meta">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
         {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}">Next</a>
+          <a href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
         {% endif %}
       </nav>
     {% endif %}
   {% else %}
-    <p class="muted">No devices yet. <a href="{% url 'devices:create' %}">Add the first device</a>.</p>
+    <div class="page-head">
+      <h1 class="page-title">Device inventory</h1>
+      <div class="page-head__actions">
+        <a class="btn btn--secondary" href="{% url 'devices:export_csv' %}">Export CSV</a>
+        <a class="btn btn--secondary" href="{% url 'devices:import' %}">Import CSV</a>
+        <a class="btn btn--primary" href="{% url 'devices:create' %}">Add device</a>
+      </div>
+    </div>
+    <div class="no-print" style="margin-bottom: 1rem;">
+      <a href="{% url 'devices:list' %}">Show all devices</a>
+      {% if warranty_within %}
+        · <a href="{% url 'devices:list' %}?warranty_within={{ warranty_within }}">Refresh warranty filter</a>
+      {% endif %}
+    </div>
+    <p class="muted">
+      {% if warranty_within %}
+        No devices match this warranty window.
+        <a href="{% url 'devices:list' %}">Clear filter</a>.
+      {% else %}
+        No devices yet. <a href="{% url 'devices:create' %}">Add the first device</a>.
+      {% endif %}
+    </p>
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  {% if devices %}
+    <script>
+      (function () {
+        var all = document.getElementById('device-select-all');
+        var form = document.getElementById('device-print-bulk-form');
+        if (!form) return;
+        if (all) {
+          all.addEventListener('change', function () {
+            form.querySelectorAll('input[name="device_ids"]').forEach(function (cb) {
+              cb.checked = all.checked;
+            });
+          });
+        }
+        form.addEventListener('submit', function (e) {
+          if (!form.querySelector('input[name="device_ids"]:checked')) {
+            e.preventDefault();
+            alert('Select at least one device on this page, or use Print tag on a single row.');
+          }
+        });
+      })();
+    </script>
   {% endif %}
 {% endblock %}

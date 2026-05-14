@@ -18,8 +18,8 @@ class UserAdmin(BaseUserAdmin):
     filter_horizontal = ()
 
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('DistrictDesk', {'fields': ('role',)}),
+        ('DistrictDesk', {'fields': ('role', 'email_ticket_updates')}),
     )
     add_fieldsets = BaseUserAdmin.add_fieldsets + (
-        ('DistrictDesk', {'fields': ('role',)}),
+        ('DistrictDesk', {'fields': ('role', 'email_ticket_updates')}),
     )

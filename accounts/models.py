@@ -24,6 +24,10 @@ class User(AbstractUser):
         blank=True,
         related_name='users',
     )
+    email_ticket_updates = models.BooleanField(
+        default=True,
+        help_text='When enabled, receive email when your tickets are updated by staff.',
+    )
 
     class Meta:
         db_table = 'accounts_user'

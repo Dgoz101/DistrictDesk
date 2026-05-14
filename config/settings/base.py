@@ -99,5 +99,8 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
+# Public absolute URLs (e.g. QR codes) when `Host` behind a reverse proxy is wrong.
+PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '').strip().rstrip('/')
+
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'districtdesk@localhost')
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
