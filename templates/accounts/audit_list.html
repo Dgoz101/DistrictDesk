@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Audit log — DistrictDesk{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1 class="page-title">Audit log</h1>
+  </div>
+  <p class="muted">
+    Append-only record of sign-ins (success and failure), sign-outs, user role changes, ticket categories and priorities, and ticket category/priority updates.
+    Status and assignment history appear on each ticket’s activity timeline.
+  </p>
+
+  <div class="no-print" style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+    <span class="muted">Filter:</span>
+    <a href="{% url 'accounts:audit_list' %}" class="btn btn--ghost">All</a>
+    {% for value, label in entity_type_choices %}
+      <a href="{% url 'accounts:audit_list' %}?entity_type={{ value }}" class="btn btn--ghost">{{ label }}</a>
+    {% endfor %}
+    {% if entity_type %}<span class="muted">(showing {{ entity_type }})</span>{% endif %}
+  </div>
+
+  {% if entries %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">When</th>
+            <th scope="col">Actor</th>
+            <th scope="col">Action</th>
+            <th scope="col">Entity</th>
+            <th scope="col">Field</th>
+            <th scope="col">Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in entries %}
+            <tr>
+              <td>{{ e.created_at|date:"Y-m-d H:i" }}</td>
+              <td>
+                {% if e.actor %}
+                  {{ e.actor.email|default:e.actor.username }}
+                {% else %}
+                  <span class="muted">—</span>
+                {% endif %}
+              </td>
+              <td>{{ e.get_action_display }}</td>
+              <td>
+                {{ e.get_entity_type_display }}
+                {% if e.object_label %}<br><span class="muted">{{ e.object_label }}</span>{% endif %}
+                {% if e.ticket_id %}
+                  <br><a href="{% url 'tickets:detail' e.ticket_id %}">Ticket #{{ e.ticket_id }}</a>
+                {% endif %}
+              </td>
+              <td>{% if e.field_name %}{{ e.field_name }}{% else %}—{% endif %}</td>
+              <td>
+                {% if e.entity_type == 'auth' %}
+                  {{ e.new_value }}
+                {% elif e.action == 'delete' %}
+                  <span class="muted">Removed</span> {{ e.old_value }}
+                {% elif e.action == 'create' and e.field_name %}
+                  {{ e.field_name }}: {{ e.new_value }}
+                {% elif e.field_name %}
+                  {{ e.old_value }} → {{ e.new_value }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+      <nav class="pagination" aria-label="Audit log pages">
+        {% if page_obj.has_previous %}
+          <a href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span class="pagination__meta">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <p class="muted">No audit entries yet.</p>
+  {% endif %}
+{% endblock %}

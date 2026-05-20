@@ -2,6 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from .views import (
+    AdminAuditListView,
     DistrictDeskLoginView,
     DistrictDeskLogoutView,
     RegisterView,
@@ -14,6 +15,7 @@ app_name = 'accounts'
 
 urlpatterns = [
     path('email-preferences/', UserEmailPreferencesView.as_view(), name='email_preferences'),
+    path('audit/', AdminAuditListView.as_view(), name='audit_list'),
     path('users/', UserListView.as_view(), name='user_list'),
     path('users/<int:pk>/edit/', UserAdminUpdateView.as_view(), name='user_edit'),
     path('register/', RegisterView.as_view(), name='register'),

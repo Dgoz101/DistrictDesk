@@ -5,9 +5,15 @@ from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView
 
 from accounts.mixins import AdminRequiredMixin
+from core.audit import log_create, log_delete, log_ticket_lookup_change
+from core.models import AdminAuditEntry
 
 from .forms import PriorityLevelForm, TicketCategoryForm
 from .models import PriorityLevel, TicketCategory
+
+
+def _lookup_fields(instance) -> dict[str, str]:
+    return {'name': instance.name, 'sort_order': str(instance.sort_order)}
 
 
 class TicketSettingsHubView(AdminRequiredMixin, TemplateView):
@@ -31,8 +37,15 @@ class TicketCategoryCreateView(AdminRequiredMixin, CreateView):
     template_name = 'tickets/ticketcategory_form.html'
 
     def form_valid(self, form):
+        response = super().form_valid(form)
+        log_create(
+            self.request.user,
+            entity_type=AdminAuditEntry.EntityType.TICKET_CATEGORY,
+            instance=self.object,
+            fields=_lookup_fields(self.object),
+        )
         messages.success(self.request, 'Category created.')
-        return super().form_valid(form)
+        return response
 
     def get_success_url(self):
         return reverse('tickets:category_list')
@@ -44,8 +57,17 @@ class TicketCategoryUpdateView(AdminRequiredMixin, UpdateView):
     template_name = 'tickets/ticketcategory_form.html'
 
     def form_valid(self, form):
+        old_fields = _lookup_fields(self.get_object())
+        response = super().form_valid(form)
+        log_ticket_lookup_change(
+            self.request.user,
+            self.object,
+            entity_type=AdminAuditEntry.EntityType.TICKET_CATEGORY,
+            old_fields=old_fields,
+            new_fields=_lookup_fields(self.object),
+        )
         messages.success(self.request, 'Category updated.')
-        return super().form_valid(form)
+        return response
 
     def get_success_url(self):
         return reverse('tickets:category_list')
@@ -57,8 +79,16 @@ class TicketCategoryDeleteView(AdminRequiredMixin, DeleteView):
     success_url = reverse_lazy('tickets:category_list')
 
     def form_valid(self, form):
+        label = self.object.name
+        pk = self.object.pk
         try:
             self.object.delete()
+            log_delete(
+                self.request.user,
+                entity_type=AdminAuditEntry.EntityType.TICKET_CATEGORY,
+                object_label=label,
+                object_id=pk,
+            )
             messages.success(self.request, 'Category deleted.')
         except ProtectedError:
             messages.error(
@@ -84,8 +114,15 @@ class PriorityLevelCreateView(AdminRequiredMixin, CreateView):
     template_name = 'tickets/prioritylevel_form.html'
 
     def form_valid(self, form):
+        response = super().form_valid(form)
+        log_create(
+            self.request.user,
+            entity_type=AdminAuditEntry.EntityType.PRIORITY_LEVEL,
+            instance=self.object,
+            fields=_lookup_fields(self.object),
+        )
         messages.success(self.request, 'Priority level created.')
-        return super().form_valid(form)
+        return response
 
     def get_success_url(self):
         return reverse('tickets:priority_list')
@@ -97,8 +134,17 @@ class PriorityLevelUpdateView(AdminRequiredMixin, UpdateView):
     template_name = 'tickets/prioritylevel_form.html'
 
     def form_valid(self, form):
+        old_fields = _lookup_fields(self.get_object())
+        response = super().form_valid(form)
+        log_ticket_lookup_change(
+            self.request.user,
+            self.object,
+            entity_type=AdminAuditEntry.EntityType.PRIORITY_LEVEL,
+            old_fields=old_fields,
+            new_fields=_lookup_fields(self.object),
+        )
         messages.success(self.request, 'Priority level updated.')
-        return super().form_valid(form)
+        return response
 
     def get_success_url(self):
         return reverse('tickets:priority_list')
@@ -110,8 +156,16 @@ class PriorityLevelDeleteView(AdminRequiredMixin, DeleteView):
     success_url = reverse_lazy('tickets:priority_list')
 
     def form_valid(self, form):
+        label = self.object.name
+        pk = self.object.pk
         try:
             self.object.delete()
+            log_delete(
+                self.request.user,
+                entity_type=AdminAuditEntry.EntityType.PRIORITY_LEVEL,
+                object_label=label,
+                object_id=pk,
+            )
             messages.success(self.request, 'Priority level deleted.')
         except ProtectedError:
             messages.error(

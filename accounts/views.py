@@ -7,6 +7,8 @@ from django.urls import reverse_lazy
 from django.views.generic import FormView, ListView, UpdateView
 
 from accounts.mixins import AdminRequiredMixin
+from core.audit import log_user_admin_update
+from core.models import AdminAuditEntry
 
 from .forms import EmailLoginForm, RegisterForm, UserAdminForm, UserEmailPreferencesForm
 
@@ -84,8 +86,48 @@ class UserAdminUpdateView(AdminRequiredMixin, UpdateView):
         return kwargs
 
     def form_valid(self, form):
+        user = self.get_object()
+        old_role_name = user.role.name if user.role_id else ''
+        old_active = user.is_active
+        response = super().form_valid(form)
+        user.refresh_from_db()
+        new_role_name = user.role.name if user.role_id else ''
+        log_user_admin_update(
+            self.request.user,
+            user,
+            old_role_name=old_role_name,
+            new_role_name=new_role_name,
+            old_active=old_active,
+            new_active=user.is_active,
+        )
         messages.success(self.request, 'User updated.')
-        return super().form_valid(form)
+        return response
 
     def get_success_url(self):
         return reverse_lazy('accounts:user_list')
+
+
+class AdminAuditListView(AdminRequiredMixin, ListView):
+    """Administrator audit log (roles, lookups, sensitive ticket field changes)."""
+
+    model = AdminAuditEntry
+    template_name = 'accounts/audit_list.html'
+    context_object_name = 'entries'
+    paginate_by = 50
+
+    def get_queryset(self):
+        qs = AdminAuditEntry.objects.select_related('actor', 'ticket').order_by('-created_at')
+        entity = self.request.GET.get('entity_type', '').strip()
+        if entity and entity in dict(AdminAuditEntry.EntityType.choices):
+            qs = qs.filter(entity_type=entity)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['entity_type'] = self.request.GET.get('entity_type', '').strip()
+        ctx['entity_type_choices'] = AdminAuditEntry.EntityType.choices
+        get = self.request.GET.copy()
+        if 'page' in get:
+            del get['page']
+        ctx['filter_query'] = get.urlencode()
+        return ctx

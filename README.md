@@ -65,12 +65,12 @@ Additional project documentation is available in the `docs/` folder:
 
 ## Roles and permissions (RBAC)
 
-- **Administrator** — access to the **dashboard** (`/dashboard/`: ticket/device charts and KPIs; optional JSON at `/dashboard/api/summary/`), **device inventory** (list, add, edit under `/devices/`), **user management** at `/accounts/users/` (list and edit role / active status), **ticket settings** at `/tickets/settings/` (categories and priority levels CRUD), and the full ticket workflow on list/detail (assign, update status/priority/category, internal comments, search/filter/sort on the ticket list). Enforced with `accounts.mixins.AdminRequiredMixin` (class-based views) and `accounts.decorators.admin_required` (function views).
+- **Administrator** — access to the **dashboard** (`/dashboard/`: ticket/device charts and KPIs; optional JSON at `/dashboard/api/summary/`), **device inventory** (list, add, edit under `/devices/`), **user management** at `/accounts/users/` (list and edit role / active status), **audit log** at `/accounts/audit/` (sign-in/out, role, lookup, and ticket category/priority changes), **ticket settings** at `/tickets/settings/` (categories and priority levels CRUD), and the full ticket workflow on list/detail (assign, update status/priority/category, internal comments, search/filter/sort on the ticket list). Enforced with `accounts.mixins.AdminRequiredMixin` (class-based views) and `accounts.decorators.admin_required` (function views).
 - **Standard User** — ticket flows for their own requests (Phase 3+). Cannot access administrator-only URLs (HTTP 403).
 
 ### Administrative management (FR-38–FR-39)
 
-- **Custom app UI:** `/accounts/users/` lists users; `/accounts/users/<id>/edit/` edits role and active flag (you cannot deactivate your own account). `/tickets/settings/` links to category and priority CRUD; deleting a category or priority that is still referenced by tickets shows an error and leaves the row in place.
+- **Custom app UI:** `/accounts/users/` lists users; `/accounts/users/<id>/edit/` edits role and active flag (you cannot deactivate your own account). `/accounts/audit/` shows append-only audit entries including **sign-in** (success/failure with client IP), **sign-out**, role changes, and ticket lookup edits. `/tickets/settings/` links to category and priority CRUD; deleting a category or priority that is still referenced by tickets shows an error and leaves the row in place. Ticket detail **Activity** merges status history, assignments, and audited category/priority changes.
 - **Django admin (`/admin/`):** Still available for staff operations such as password hashes, `is_staff` / superuser flags, device type/status lookups, and other model maintenance not exposed in the custom UI.
 
 ## URL map (main app routes)
@@ -83,6 +83,7 @@ Additional project documentation is available in the `docs/` folder:
 | `/accounts/register/`, `/accounts/login/`, `/accounts/logout/` | Registration and session auth |
 | `/accounts/password-reset/`, … | Password reset flow |
 | `/accounts/users/`, `/accounts/users/<id>/edit/` | User list / edit (administrators) |
+| `/accounts/audit/` | Administrator audit log (filter by entity type) |
 | `/tickets/`, `/tickets/new/` | Ticket list and create |
 | `/tickets/settings/`, `/tickets/settings/categories/…`, `/tickets/settings/priorities/…` | Ticket lookup CRUD (administrators) |
 | `/tickets/<id>/`, `/tickets/<id>/admin/update/`, `/assign/`, `/comment/` | Ticket detail and admin actions |

@@ -106,22 +106,23 @@
     {% endif %}
 
     <section class="ticket-detail__section">
-      <h2>Status history</h2>
-      {% if ticket.status_history.all %}
+      <h2>Activity</h2>
+      <p class="muted" style="margin-top: 0;">Status changes, assignments, and category/priority updates in chronological order.</p>
+      {% if activity_timeline %}
         <ol class="history-list">
-          {% for row in ticket.status_history.all %}
+          {% for event in activity_timeline %}
             <li>
-              <time datetime="{{ row.changed_at|date:'c' }}">{{ row.changed_at|date:"Y-m-d H:i" }}</time>
+              <time datetime="{{ event.at|date:'c' }}">{{ event.at|date:"Y-m-d H:i" }}</time>
               —
-              {% if row.old_status %}{{ row.old_status }} → {% endif %}{{ row.new_status }}
-              {% if row.changed_by %}
-                <span class="muted">({{ row.changed_by.email|default:row.changed_by.username }})</span>
+              {{ event.summary }}
+              {% if event.actor %}
+                <span class="muted">({{ event.actor.email|default:event.actor.username }})</span>
               {% endif %}
             </li>
           {% endfor %}
         </ol>
       {% else %}
-        <p class="muted">No history recorded.</p>
+        <p class="muted">No activity recorded yet.</p>
       {% endif %}
     </section>
 

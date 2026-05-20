@@ -25,14 +25,33 @@ def record_status_change(ticket, old_status, new_status, user):
     )
 
 
-def apply_admin_ticket_update(ticket, user, *, category, priority, new_status, old_status):
+def apply_admin_ticket_update(
+    ticket,
+    user,
+    *,
+    category,
+    priority,
+    new_status,
+    old_status,
+    old_category=None,
+    old_priority=None,
+):
     """
     Update category, priority, and status from admin form.
     Records status history only when status changes; sets closed_at for Resolved/Closed (FR-22).
     `old_status` must be captured before binding the POST form to the instance.
     """
+    from core.audit import log_ticket_field_changes
+
     ticket.category = category
     ticket.priority = priority
+    cat_change = None
+    pri_change = None
+    if old_category is not None and old_category.pk != category.pk:
+        cat_change = (old_category.name, category.name)
+    if old_priority is not None and old_priority.pk != priority.pk:
+        pri_change = (old_priority.name, priority.name)
+
     if new_status != old_status:
         ticket.status = new_status
         if new_status in (Ticket.Status.RESOLVED, Ticket.Status.CLOSED):
@@ -43,6 +62,13 @@ def apply_admin_ticket_update(ticket, user, *, category, priority, new_status, o
         record_status_change(ticket, old_status, new_status, user)
     else:
         ticket.save(update_fields=['category', 'priority', 'updated_at'])
+
+    log_ticket_field_changes(
+        user,
+        ticket,
+        category_change=cat_change,
+        priority_change=pri_change,
+    )
 
 
 def assign_ticket(ticket, assignee, assigned_by):

@@ -40,6 +40,7 @@ class Phase2RBACMatrixTests(TestCase):
             '/devices/import/',
             '/devices/export.csv',
             '/accounts/users/',
+            '/accounts/audit/',
             '/tickets/settings/',
         ):
             with self.subTest(path=path):
@@ -56,6 +57,7 @@ class Phase2RBACMatrixTests(TestCase):
             '/devices/import/',
             '/devices/export.csv',
             '/accounts/users/',
+            '/accounts/audit/',
             '/tickets/settings/',
         ):
             with self.subTest(path=path):
@@ -69,6 +71,7 @@ class Phase2RBACMatrixTests(TestCase):
             '/devices/import/',
             '/devices/export.csv',
             '/accounts/users/',
+            '/accounts/audit/',
             '/tickets/settings/',
         ):
             with self.subTest(path=path):
@@ -101,4 +104,5 @@ class Phase2RBACMatrixTests(TestCase):
         self.assertContains(r, 'href="/dashboard/"')
         self.assertContains(r, 'href="/devices/"')
         self.assertContains(r, 'href="/accounts/users/"')
+        self.assertContains(r, 'href="/accounts/audit/"')
         self.assertContains(r, 'href="/tickets/settings/"')

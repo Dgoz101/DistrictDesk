@@ -17,6 +17,8 @@ from .forms import (
 )
 from . import email_updates
 from .models import Ticket, TicketAssignment, TicketComment
+from core.audit import build_ticket_activity_timeline
+
 from .services import apply_admin_ticket_update, assign_ticket, record_ticket_created
 
 
@@ -158,6 +160,7 @@ class TicketDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         ticket = self.object
         ctx['current_assignment'] = ticket.assignments.filter(is_current=True).first()
+        ctx['activity_timeline'] = build_ticket_activity_timeline(ticket)
         if self.request.user.is_administrator:
             ctx['admin_update_form'] = TicketAdminUpdateForm(instance=ticket)
             ctx['assign_form'] = TicketAssignForm()
@@ -183,6 +186,8 @@ class TicketAdminUpdateView(AdminRequiredMixin, View):
                 priority=cd['priority'],
                 new_status=cd['status'],
                 old_status=old_status,
+                old_category=old_category,
+                old_priority=old_priority,
             )
             summary = []
             if old_status != cd['status']:
