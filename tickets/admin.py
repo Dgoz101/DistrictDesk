@@ -3,6 +3,7 @@ from .models import (
     PriorityLevel,
     Ticket,
     TicketAssignment,
+    TicketAttachment,
     TicketCategory,
     TicketComment,
     TicketStatusHistory,
@@ -35,12 +36,29 @@ class TicketStatusHistoryInline(admin.TabularInline):
     readonly_fields = ('old_status', 'new_status', 'changed_by', 'changed_at')
 
 
+class TicketAttachmentInline(admin.TabularInline):
+    model = TicketAttachment
+    extra = 0
+    readonly_fields = ('original_filename', 'size_bytes', 'content_type', 'uploaded_by', 'uploaded_at')
+
+
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
     list_display = ('title', 'submitter', 'category', 'priority', 'status', 'created_at')
     list_filter = ('status', 'category', 'priority')
     search_fields = ('title', 'description')
-    inlines = [TicketAssignmentInline, TicketCommentInline, TicketStatusHistoryInline]
+    inlines = [
+        TicketAssignmentInline,
+        TicketCommentInline,
+        TicketAttachmentInline,
+        TicketStatusHistoryInline,
+    ]
+
+
+@admin.register(TicketAttachment)
+class TicketAttachmentAdmin(admin.ModelAdmin):
+    list_display = ('original_filename', 'ticket', 'size_bytes', 'uploaded_by', 'uploaded_at')
+    list_filter = ('uploaded_at',)
 
 
 @admin.register(TicketAssignment)

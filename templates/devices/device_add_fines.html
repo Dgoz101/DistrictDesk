@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Add fines — {{ device.asset_tag }} — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'devices:detail' device.pk %}">← {{ device.asset_tag }}</a></p>
+
+  <div class="page-head">
+    <h1 class="page-title">Add fines</h1>
+  </div>
+  <p class="muted">
+    Checkout returned {{ checkout.returned_at|date:"Y-m-d H:i" }}
+    · {{ checkout.checked_out_to.email|default:checkout.checked_out_to.username }}
+  </p>
+
+  <form method="post" class="form">
+    {% csrf_token %}
+    <input type="hidden" name="assess_fines" value="1">
+
+    <section class="card">
+      <h2 class="page-title" style="font-size: 1.05rem;">Damage fines</h2>
+      {% for ft in fine_types %}
+        {% if ft.code != 'other' %}
+          <div class="field" style="border-top: 1px solid var(--color-border); padding-top: 0.75rem;">
+            <label>
+              <input type="checkbox" name="fine_type" value="{{ ft.pk }}">
+              <strong>{{ ft.name }}</strong> — default ${{ ft.default_amount }}
+            </label>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem;">
+              <div>
+                <label class="field__label">Qty</label>
+                <input type="number" name="fine_qty_{{ ft.pk }}" value="1" min="1" style="width: 5rem;">
+              </div>
+              <div>
+                <label class="field__label">Amount ($)</label>
+                <input type="number" name="fine_amount_{{ ft.pk }}" step="0.01" min="0" value="{{ ft.default_amount }}" style="width: 8rem;">
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+      <div class="field" style="margin-top: 1rem;">
+        <h3 style="font-size: 1rem;">Custom fine</h3>
+        {{ form.custom_fine_description }}
+        {{ form.custom_fine_amount }}
+        {{ form.custom_fine_notes }}
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Add fines</button>
+      <a href="{% url 'devices:detail' device.pk %}" class="btn btn--ghost">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

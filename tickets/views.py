@@ -1,7 +1,10 @@
+import mimetypes
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import transaction
 from django.db.models import Prefetch, Q
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.views import View
@@ -16,7 +19,10 @@ from .forms import (
     TicketForm,
 )
 from . import email_updates
-from .models import Ticket, TicketAssignment, TicketComment
+from .attachment_service import save_ticket_attachments
+from .attachment_validation import attachment_accept_attribute, attachment_help_text, validate_attachment_files
+from .models import Ticket, TicketAssignment, TicketAttachment, TicketComment
+from .ticket_access import user_can_access_ticket
 from core.audit import build_ticket_activity_timeline
 
 from .services import apply_admin_ticket_update, assign_ticket, record_ticket_created
@@ -105,7 +111,7 @@ class TicketListView(LoginRequiredMixin, ListView):
 
 
 class TicketCreateView(LoginRequiredMixin, CreateView):
-    """Submit a new ticket (FR-10–FR-13)."""
+    """Submit a new ticket (FR-10–FR-13); optional file attachments."""
     model = Ticket
     form_class = TicketForm
     template_name = 'tickets/ticket_form.html'
@@ -117,13 +123,36 @@ class TicketCreateView(LoginRequiredMixin, CreateView):
             initial['device'] = int(str(raw).strip())
         return initial
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['attachment_accept'] = attachment_accept_attribute()
+        ctx['attachment_help_text'] = attachment_help_text()
+        return ctx
+
     def form_valid(self, form):
+        file_errors = validate_attachment_files(self.request.FILES.getlist('attachments'))
+        if file_errors:
+            for err in file_errors:
+                form.add_error(None, err)
+            return self.form_invalid(form)
+
         form.instance.submitter = self.request.user
         form.instance.status = Ticket.Status.OPEN
         with transaction.atomic():
             response = super().form_valid(form)
+            n = save_ticket_attachments(
+                ticket=self.object,
+                user=self.request.user,
+                files=self.request.FILES.getlist('attachments'),
+            )
             record_ticket_created(self.object, self.request.user)
-        messages.success(self.request, 'Your support ticket was submitted.')
+        if n:
+            messages.success(
+                self.request,
+                f'Your support ticket was submitted with {n} attachment(s).',
+            )
+        else:
+            messages.success(self.request, 'Your support ticket was submitted.')
         return response
 
     def get_success_url(self):
@@ -143,6 +172,7 @@ class TicketDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         ).prefetch_related(
             'status_history__changed_by',
             'comments__author',
+            'attachments__uploaded_by',
             Prefetch(
                 'assignments',
                 queryset=TicketAssignment.objects.filter(is_current=True).select_related(
@@ -244,3 +274,26 @@ class TicketCommentAddView(AdminRequiredMixin, View):
         else:
             messages.error(request, 'Could not add comment.')
         return redirect('tickets:detail', pk=pk)
+
+
+class TicketAttachmentDownloadView(LoginRequiredMixin, View):
+    """Download a ticket attachment (submitter or administrator only)."""
+
+    def get(self, request, pk):
+        attachment = get_object_or_404(
+            TicketAttachment.objects.select_related('ticket', 'uploaded_by'),
+            pk=pk,
+        )
+        if not user_can_access_ticket(request.user, attachment.ticket):
+            raise Http404
+        if not attachment.file:
+            raise Http404
+        content_type = attachment.content_type or mimetypes.guess_type(
+            attachment.original_filename
+        )[0] or 'application/octet-stream'
+        return FileResponse(
+            attachment.file.open('rb'),
+            content_type=content_type,
+            as_attachment=True,
+            filename=attachment.original_filename,
+        )

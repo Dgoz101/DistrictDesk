@@ -26,6 +26,22 @@
       <div class="ticket-detail__body">{{ ticket.description|linebreaks }}</div>
     </section>
 
+    <section class="ticket-detail__section">
+      <h2>Attachments</h2>
+      {% if ticket.attachments.all %}
+        <ul class="attachment-list">
+          {% for att in ticket.attachments.all %}
+            <li>
+              <a href="{% url 'tickets:attachment_download' att.pk %}">{{ att.original_filename }}</a>
+              <span class="muted">({{ att.size_bytes|filesizeformat }}) · {{ att.uploaded_at|date:"Y-m-d H:i" }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No attachments.</p>
+      {% endif %}
+    </section>
+
     {% if ticket.device %}
       <section class="ticket-detail__section">
         <h2>Device</h2>

@@ -1,9 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model
-
 from core.models import Location
 
-from .models import Device, DeviceStatus, DeviceType
+from .models import Device, DeviceCheckoutPolicy, DeviceFineType, DeviceStatus, DeviceType
 
 User = get_user_model()
 
@@ -75,3 +74,56 @@ class DeviceCheckoutForm(forms.Form):
         self.fields['checked_out_to'].queryset = User.objects.filter(is_active=True).order_by(
             'username'
         )
+
+
+class DeviceFineTypeForm(forms.ModelForm):
+    class Meta:
+        model = DeviceFineType
+        fields = ['name', 'description', 'default_amount', 'sort_order', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'maxlength': 100}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'default_amount': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'sort_order': forms.NumberInput(attrs={'step': '1'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk and self.instance.is_system:
+            self.fields['name'].disabled = True
+
+
+class DeviceCheckoutPolicyForm(forms.ModelForm):
+    class Meta:
+        model = DeviceCheckoutPolicy
+        fields = [
+            'late_fee_enabled',
+            'late_fee_per_day',
+            'late_grace_days',
+            'late_fee_max_amount',
+        ]
+        widgets = {
+            'late_fee_per_day': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'late_grace_days': forms.NumberInput(attrs={'step': '1', 'min': '0'}),
+            'late_fee_max_amount': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+        }
+
+    def clean_late_fee_max_amount(self):
+        val = self.cleaned_data.get('late_fee_max_amount')
+        if val is not None and val <= 0:
+            return None
+        return val
+
+
+class AddCheckoutFinesForm(forms.Form):
+    """Post-return: add additional damage fines to a closed checkout."""
+
+    custom_fine_description = forms.CharField(max_length=200, required=False, label='Description')
+    custom_fine_amount = forms.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        min_value=0,
+        required=False,
+        label='Amount',
+    )
+    custom_fine_notes = forms.CharField(widget=forms.Textarea(attrs={'rows': 2}), required=False)

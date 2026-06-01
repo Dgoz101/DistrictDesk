@@ -5,9 +5,9 @@
 {% block content %}
   <section class="card card--form">
     <h1>New support ticket</h1>
-    <p class="muted">Required fields: title, description, category, and priority. Device and location are optional.</p>
+    <p class="muted">Required fields: title, description, category, and priority. Device, location, and attachments are optional.</p>
 
-    <form method="post" action="{% url 'tickets:create' %}" class="form" novalidate>
+    <form method="post" action="{% url 'tickets:create' %}" class="form" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
       {% if form.non_field_errors %}
         <ul class="form-errors" role="alert">
@@ -24,6 +24,11 @@
           {% endif %}
         </div>
       {% endfor %}
+      <div class="field">
+        <label class="field__label" for="id_attachments">Attachments (optional)</label>
+        <input type="file" name="attachments" id="id_attachments" multiple accept="{{ attachment_accept }}">
+        <p class="field-help">{{ attachment_help_text }}</p>
+      </div>
       <div class="form-actions">
         <button type="submit" class="btn btn--primary">Submit ticket</button>
         <a href="{% url 'tickets:list' %}" class="btn btn--ghost">Cancel</a>

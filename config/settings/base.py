@@ -93,6 +93,23 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+
+# Optional ticket attachments (create only; not required)
+TICKET_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024
+TICKET_ATTACHMENT_MAX_FILES = 5
+TICKET_ATTACHMENT_MAX_TOTAL_BYTES = 15 * 1024 * 1024
+TICKET_ATTACHMENT_ALLOWED_EXTENSIONS = (
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.gif',
+    '.webp',
+    '.pdf',
+    '.txt',
+)
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = '/accounts/login/'

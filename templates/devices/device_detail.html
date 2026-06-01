@@ -54,11 +54,9 @@
         {% if open_checkout.due_at %} · <strong>Due:</strong> {{ open_checkout.due_at|date:"Y-m-d H:i" }}{% endif %}
       </p>
       {% if open_checkout.notes %}<p class="muted">{{ open_checkout.notes }}</p>{% endif %}
-      <form method="post" class="form-actions" style="margin-top: 0.75rem;">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="return">
-        <button type="submit" class="btn btn--primary">Mark returned</button>
-      </form>
+      <div class="form-actions" style="margin-top: 0.75rem;">
+        <a class="btn btn--primary" href="{% url 'devices:return_inspection' device.pk %}">Return device…</a>
+      </div>
     {% else %}
       <form method="post" class="form" novalidate>
         {% csrf_token %}
@@ -90,6 +88,8 @@
               <th scope="col">Out</th>
               <th scope="col">Due</th>
               <th scope="col">Returned</th>
+              <th scope="col">Fines</th>
+              <th scope="col"></th>
             </tr>
           </thead>
           <tbody>
@@ -99,7 +99,47 @@
                 <td>{{ c.checked_out_at|date:"Y-m-d H:i" }}</td>
                 <td>{% if c.due_at %}{{ c.due_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
                 <td>{% if c.returned_at %}{{ c.returned_at|date:"Y-m-d H:i" }}{% else %}<span class="badge">Open</span>{% endif %}</td>
+                <td>
+                  {% if c.fine_total %}
+                    ${{ c.fine_total }}
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if c.returned_at %}
+                    <a href="{% url 'devices:checkout_add_fines' device.pk c.pk %}">Add fines</a>
+                  {% endif %}
+                </td>
               </tr>
+              {% if c.fines.all %}
+                <tr>
+                  <td colspan="7" style="padding-left: 1.5rem;">
+                    <ul class="muted" style="margin: 0;">
+                      {% for f in c.fines.all %}
+                        <li>
+                          {{ f.description }} — ${{ f.line_total }}
+                          <span class="badge">{{ f.get_status_display }}</span>
+                          {% if f.status == 'pending' %}
+                            <form method="post" action="{% url 'devices:fine_mark_status' f.pk %}" style="display:inline;">
+                              {% csrf_token %}
+                              <input type="hidden" name="status" value="paid">
+                              <input type="hidden" name="next" value="{% url 'devices:detail' device.pk %}">
+                              <button type="submit" class="btn btn--ghost">Paid</button>
+                            </form>
+                            <form method="post" action="{% url 'devices:fine_mark_status' f.pk %}" style="display:inline;">
+                              {% csrf_token %}
+                              <input type="hidden" name="status" value="waived">
+                              <input type="hidden" name="next" value="{% url 'devices:detail' device.pk %}">
+                              <button type="submit" class="btn btn--ghost">Waive</button>
+                            </form>
+                          {% endif %}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </td>
+                </tr>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>

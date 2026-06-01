@@ -14,6 +14,7 @@ from .settings_views import (
 from .views import (
     TicketAdminUpdateView,
     TicketAssignView,
+    TicketAttachmentDownloadView,
     TicketCommentAddView,
     TicketCreateView,
     TicketDetailView,
@@ -34,6 +35,11 @@ urlpatterns = [
     path('settings/priorities/<int:pk>/delete/', PriorityLevelDeleteView.as_view(), name='priority_delete'),
     path('', TicketListView.as_view(), name='list'),
     path('new/', TicketCreateView.as_view(), name='create'),
+    path(
+        'attachments/<int:pk>/download/',
+        TicketAttachmentDownloadView.as_view(),
+        name='attachment_download',
+    ),
     path('<int:pk>/admin/update/', TicketAdminUpdateView.as_view(), name='admin_update'),
     path('<int:pk>/assign/', TicketAssignView.as_view(), name='assign'),
     path('<int:pk>/comment/', TicketCommentAddView.as_view(), name='comment_add'),

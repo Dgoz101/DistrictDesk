@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Device fines — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'devices:settings_hub' %}">← Device settings</a></p>
+
+  <div class="page-head">
+    <h1 class="page-title">Device fines</h1>
+  </div>
+
+  <div class="no-print" style="margin-bottom: 1rem;">
+    <span class="muted">Status:</span>
+    <a href="{% url 'devices:fine_list' %}" class="btn btn--ghost">All</a>
+    {% for value, label in status_choices %}
+      <a href="{% url 'devices:fine_list' %}?status={{ value }}" class="btn btn--ghost">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {% if fines %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">When</th>
+            <th scope="col">Device</th>
+            <th scope="col">Borrower</th>
+            <th scope="col">Description</th>
+            <th scope="col">Amount</th>
+            <th scope="col">Status</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in fines %}
+            <tr>
+              <td>{{ f.assessed_at|date:"Y-m-d H:i" }}</td>
+              <td><a href="{% url 'devices:detail' f.checkout.device_id %}">{{ f.checkout.device.asset_tag }}</a></td>
+              <td>{{ f.checkout.checked_out_to.email|default:f.checkout.checked_out_to.username }}</td>
+              <td>{{ f.description }}{% if f.is_late_fee %} <span class="badge badge--muted">Late</span>{% endif %}</td>
+              <td>${{ f.line_total }}{% if f.quantity > 1 %} <span class="muted">({{ f.quantity }}× ${{ f.amount }})</span>{% endif %}</td>
+              <td><span class="badge">{{ f.get_status_display }}</span></td>
+              <td>
+                {% if f.status == 'pending' %}
+                  <form method="post" action="{% url 'devices:fine_mark_status' f.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="paid">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn--ghost">Paid</button>
+                  </form>
+                  <form method="post" action="{% url 'devices:fine_mark_status' f.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="waived">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn--ghost">Waive</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+      <nav class="pagination">
+        {% if page_obj.has_previous %}<a href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+        <span class="pagination__meta">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <p class="muted">No fines match this filter.</p>
+  {% endif %}
+{% endblock %}

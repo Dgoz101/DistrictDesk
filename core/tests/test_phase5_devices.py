@@ -227,7 +227,10 @@ class Phase5DeviceTests(TestCase):
         self.assertTrue(
             DeviceCheckout.objects.filter(device=d, returned_at__isnull=True).exists()
         )
-        r2 = self.client.post(f'/devices/{d.pk}/', {'action': 'return'})
+        r2 = self.client.post(
+            f'/devices/{d.pk}/return/',
+            {'condition': 'no_damage'},
+        )
         self.assertRedirects(r2, f'/devices/{d.pk}/', fetch_redirect_response=False)
         d.refresh_from_db()
         self.assertEqual(d.status_id, self.dstatus.id)

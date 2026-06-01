@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Delete fine type — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'devices:finetype_list' %}">← Fine types</a></p>
+  <section class="card card--form">
+    <h1 class="page-title">Delete “{{ object.name }}”?</h1>
+    <p class="muted">Existing fines that reference this type keep their recorded description and amount.</p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Delete</button>
+        <a href="{% url 'devices:finetype_list' %}" class="btn btn--ghost">Cancel</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

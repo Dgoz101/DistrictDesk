@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Return {{ device.asset_tag }} — DistrictDesk{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    var assess = document.getElementById('assess-fines-toggle');
+    var panel = document.getElementById('damage-fines-panel');
+    if (!assess || !panel) return;
+    function sync() {
+      panel.hidden = !assess.checked;
+    }
+    assess.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'devices:detail' device.pk %}">← {{ device.asset_tag }}</a></p>
+
+  <div class="page-head">
+    <h1 class="page-title">Return inspection</h1>
+  </div>
+
+  <section class="card" style="margin-bottom: 1.25rem;">
+    <p><strong>Device:</strong> {{ device.asset_tag }} · {{ device.device_type.name }}</p>
+    <p><strong>Borrower:</strong> {{ checkout.checked_out_to.email|default:checkout.checked_out_to.username }}</p>
+    <p><strong>Checked out:</strong> {{ checkout.checked_out_at|date:"Y-m-d H:i" }}</p>
+    {% if checkout.due_at %}<p><strong>Due:</strong> {{ checkout.due_at|date:"Y-m-d H:i" }}</p>{% endif %}
+  </section>
+
+  <form method="post" class="form" novalidate>
+    {% csrf_token %}
+
+    {% if late_preview and policy.late_fee_enabled %}
+      <section class="card" style="margin-bottom: 1.25rem;">
+        <h2 class="page-title" style="font-size: 1.05rem;">Late return</h2>
+        <p class="muted" style="margin-top: 0;">
+          {{ late_preview.days_late }} day{{ late_preview.days_late|pluralize }} late
+          (after {{ policy.late_grace_days }} grace day{{ policy.late_grace_days|pluralize }}).
+          Policy: ${{ policy.late_fee_per_day }}/day{% if policy.late_fee_max_amount %}, max ${{ policy.late_fee_max_amount }}{% endif %}.
+        </p>
+        <div class="field">
+          <label>
+            <input type="checkbox" name="apply_late_fee" value="1" checked>
+            Apply late fee
+          </label>
+        </div>
+        <div class="field">
+          <label class="field__label" for="late_fee_amount">Amount ($)</label>
+          <input type="number" name="late_fee_amount" id="late_fee_amount" step="0.01" min="0"
+                 value="{{ late_preview.amount }}">
+        </div>
+      </section>
+    {% endif %}
+
+    <section class="card" style="margin-bottom: 1.25rem;">
+      <h2 class="page-title" style="font-size: 1.05rem;">Device condition</h2>
+      <div class="field">
+        <label>
+          <input type="radio" name="condition" value="no_damage" checked>
+          No damage — return only
+        </label>
+      </div>
+      <div class="field">
+        <label>
+          <input type="radio" name="condition" value="assess" id="condition-assess">
+          Damage or other fines
+        </label>
+      </div>
+      <div class="field">
+        <label>
+          <input type="checkbox" name="assess_fines" value="1" id="assess-fines-toggle">
+          Add damage fine line items below
+        </label>
+      </div>
+      <div class="field">
+        <label>
+          <input type="checkbox" name="set_repair_status" value="1">
+          Set device status to <strong>Repair</strong> after return
+        </label>
+      </div>
+    </section>
+
+    <section class="card" id="damage-fines-panel" hidden style="margin-bottom: 1.25rem;">
+      <h2 class="page-title" style="font-size: 1.05rem;">Damage fines</h2>
+      <p class="muted" style="margin-top: 0;">Select types and edit amounts as needed.</p>
+      {% for ft in fine_types %}
+        {% if ft.code != 'other' %}
+          <div class="field" style="border-top: 1px solid var(--color-border); padding-top: 0.75rem;">
+            <label>
+              <input type="checkbox" name="fine_type" value="{{ ft.pk }}">
+              <strong>{{ ft.name }}</strong> — default ${{ ft.default_amount }}
+            </label>
+            {% if ft.description %}<p class="field-help">{{ ft.description }}</p>{% endif %}
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem;">
+              <div>
+                <label class="field__label" for="fine_qty_{{ ft.pk }}">Qty</label>
+                <input type="number" name="fine_qty_{{ ft.pk }}" id="fine_qty_{{ ft.pk }}" value="1" min="1" style="width: 5rem;">
+              </div>
+              <div>
+                <label class="field__label" for="fine_amount_{{ ft.pk }}">Amount ($)</label>
+                <input type="number" name="fine_amount_{{ ft.pk }}" id="fine_amount_{{ ft.pk }}"
+                       step="0.01" min="0" value="{{ ft.default_amount }}" style="width: 8rem;">
+              </div>
+            </div>
+            <div class="field" style="margin-top: 0.5rem;">
+              <label class="field__label" for="fine_notes_{{ ft.pk }}">Notes</label>
+              <input type="text" name="fine_notes_{{ ft.pk }}" id="fine_notes_{{ ft.pk }}" maxlength="500">
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      <div class="field" style="border-top: 1px solid var(--color-border); padding-top: 0.75rem; margin-top: 1rem;">
+        <h3 style="font-size: 1rem;">Custom fine</h3>
+        <label class="field__label" for="custom_fine_description">Description</label>
+        <input type="text" name="custom_fine_description" id="custom_fine_description" maxlength="200">
+        <label class="field__label" for="custom_fine_amount">Amount ($)</label>
+        <input type="number" name="custom_fine_amount" id="custom_fine_amount" step="0.01" min="0">
+        <label class="field__label" for="custom_fine_notes">Notes</label>
+        <input type="text" name="custom_fine_notes" id="custom_fine_notes" maxlength="500">
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Complete return</button>
+      <a href="{% url 'devices:detail' device.pk %}" class="btn btn--ghost">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

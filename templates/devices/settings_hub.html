@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Device settings — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'devices:list' %}">← Devices</a></p>
+
+  <div class="page-head">
+    <h1 class="page-title">Device settings</h1>
+  </div>
+  <p class="muted">Configure checkout damage fines and late-return fees for loaner devices (e.g. Chromebooks).</p>
+
+  <ul class="settings-hub-links">
+    <li><a href="{% url 'devices:finetype_list' %}">Fine types (damage catalog)</a></li>
+    <li><a href="{% url 'devices:checkout_policy' %}">Late fee policy</a></li>
+    <li><a href="{% url 'devices:fine_list' %}">All fines</a></li>
+  </ul>
+{% endblock %}

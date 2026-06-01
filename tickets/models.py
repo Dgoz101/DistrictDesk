@@ -1,7 +1,19 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 
 from core.models import Location
+
+
+def ticket_attachment_upload_to(instance, filename):
+    """Store under UUID; original filename kept on the model."""
+    ext = ''
+    if instance.original_filename:
+        from pathlib import PurePath
+
+        ext = PurePath(instance.original_filename).suffix.lower()
+    return f'tickets/attachments/{uuid.uuid4().hex}{ext}'
 
 
 class TicketCategory(models.Model):
@@ -153,3 +165,28 @@ class TicketStatusHistory(models.Model):
 
     def __str__(self):
         return f'{self.ticket_id}: {self.old_status} → {self.new_status}'
+
+
+class TicketAttachment(models.Model):
+    """Optional file uploaded when a ticket is created."""
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to=ticket_attachment_upload_to)
+    original_filename = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=100, blank=True)
+    size_bytes = models.PositiveIntegerField()
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='ticket_attachments_uploaded',
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'tickets_ticketattachment'
+        ordering = ['uploaded_at']
+        indexes = [
+            models.Index(fields=['ticket', 'uploaded_at']),
+        ]
+
+    def __str__(self):
+        return self.original_filename

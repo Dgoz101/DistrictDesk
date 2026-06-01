@@ -11,7 +11,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from accounts.mixins import AdminRequiredMixin
 
-from .checkout_service import return_open_checkout, try_checkout
+from .checkout_service import try_checkout
 from .csv_io import EXPORT_FIELDNAMES, iter_export_rows, parse_upload, run_import
 from .forms import DeviceCheckoutForm, DeviceForm
 from .models import Device
@@ -191,6 +191,8 @@ class DeviceDetailView(AdminRequiredMixin, DetailView):
         device = self.object
         ctx['checkouts'] = device.checkouts.select_related(
             'checked_out_to', 'created_by'
+        ).prefetch_related(
+            'fines__fine_type',
         ).order_by('-checked_out_at')[:50]
         ctx['open_checkout'] = device.checkouts.filter(returned_at__isnull=True).first()
         ctx['checkout_form'] = DeviceCheckoutForm()
@@ -199,14 +201,6 @@ class DeviceDetailView(AdminRequiredMixin, DetailView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         action = request.POST.get('action')
-        if action == 'return':
-            co = return_open_checkout(device=self.object)
-            if co:
-                messages.success(request, 'Device marked as returned.')
-            else:
-                messages.info(request, 'There was no open checkout for this device.')
-            return redirect('devices:detail', pk=self.object.pk)
-
         if action == 'checkout':
             form = DeviceCheckoutForm(request.POST)
             if form.is_valid():

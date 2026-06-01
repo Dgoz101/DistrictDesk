@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Fine types — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'devices:settings_hub' %}">← Device settings</a></p>
+
+  <div class="page-head">
+    <h1 class="page-title">Fine types</h1>
+    <a class="btn btn--primary" href="{% url 'devices:finetype_create' %}">Add fine type</a>
+  </div>
+  <p class="muted">Default amounts pre-fill return inspection; staff can override per incident.</p>
+
+  {% if fine_types %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Default</th>
+            <th scope="col">Order</th>
+            <th scope="col">Active</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ft in fine_types %}
+            <tr>
+              <td>
+                <strong>{{ ft.name }}</strong>
+                {% if ft.is_system %}<span class="badge badge--muted">System</span>{% endif %}
+                {% if ft.description %}<br><span class="muted">{{ ft.description }}</span>{% endif %}
+              </td>
+              <td>${{ ft.default_amount }}</td>
+              <td>{{ ft.sort_order }}</td>
+              <td>{% if ft.is_active %}Yes{% else %}No{% endif %}</td>
+              <td>
+                <a href="{% url 'devices:finetype_edit' ft.pk %}">Edit</a>
+                {% if not ft.is_system %}
+                  · <a href="{% url 'devices:finetype_delete' ft.pk %}">Delete</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+      <nav class="pagination" aria-label="Fine type pages">
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+        <span class="pagination__meta">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <p class="muted">No fine types. Run <code>python manage.py seed_device_fine_types</code> or add one.</p>
+  {% endif %}
+{% endblock %}

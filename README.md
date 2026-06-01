@@ -44,6 +44,7 @@ python manage.py migrate
 python manage.py seed_roles
 python manage.py seed_ticket_lookups
 python manage.py seed_device_lookups
+python manage.py seed_device_fine_types
 python manage.py createsuperuser
 python manage.py runserver
 ```
@@ -84,10 +85,10 @@ Additional project documentation is available in the `docs/` folder:
 | `/accounts/password-reset/`, … | Password reset flow |
 | `/accounts/users/`, `/accounts/users/<id>/edit/` | User list / edit (administrators) |
 | `/accounts/audit/` | Administrator audit log (filter by entity type) |
-| `/tickets/`, `/tickets/new/` | Ticket list and create |
+| `/tickets/`, `/tickets/new/` (optional file attachments), `/tickets/attachments/<id>/download/` | Ticket list, create, and attachment download |
 | `/tickets/settings/`, `/tickets/settings/categories/…`, `/tickets/settings/priorities/…` | Ticket lookup CRUD (administrators) |
 | `/tickets/<id>/`, `/tickets/<id>/admin/update/`, `/assign/`, `/comment/` | Ticket detail and admin actions |
-| `/devices/`, `/devices/new/`, `/devices/<id>/` (detail, checkout), `/devices/import/`, `/devices/export.csv`, `/devices/print-selected/` (POST), `/devices/<id>/print/`, `/devices/<id>/edit/`, `/devices/report/<uuid>/` (public read-only) | Device inventory, **CSV import/export**, loaner checkout, **QR labels**, and warranty filters (administrators except public report) |
+| `/devices/`, `/devices/settings/` (fine types, late fee policy), `/devices/fines/`, `/devices/<id>/return/` (inspection), `/devices/<id>/` (detail, checkout), … | Device inventory, **checkout fines** (damage + late fees), CSV, QR labels, warranty filters (administrators except public report) |
 | `/dashboard/`, `/dashboard/api/summary/` | Dashboard and optional JSON summary (administrators) |
 
 ## Environment variables
@@ -100,6 +101,9 @@ Additional project documentation is available in the `docs/` folder:
 | `DJANGO_USE_SQLITE` | Set to `1` to use SQLite instead of PostgreSQL |
 | `DJANGO_DB_NAME`, `DJANGO_DB_USER`, `DJANGO_DB_PASSWORD`, `DJANGO_DB_HOST`, `DJANGO_DB_PORT` | PostgreSQL connection when not using SQLite |
 | `PUBLIC_BASE_URL` | Optional absolute site base (no trailing slash), e.g. `https://helpdesk.school.edu`, used when generating QR links for device labels if request host headers are wrong behind a proxy |
+| `TICKET_ATTACHMENT_MAX_BYTES` | Optional per-file limit (default 5 MB) |
+| `TICKET_ATTACHMENT_MAX_FILES` | Optional max files per new ticket (default 5) |
+| `TICKET_ATTACHMENT_MAX_TOTAL_BYTES` | Optional total size per submit (default 15 MB) |
 | `DEFAULT_FROM_EMAIL` | From address for outbound mail (password reset, etc.) |
 
 Run instructions: see **Setup**, **Database Configuration**, **Run Migrations**, **Seed Initial Data**, and **Create an Admin User** above. For production, set `DJANGO_ENV=production`, a strong `DJANGO_SECRET_KEY`, and real `DJANGO_ALLOWED_HOSTS`, then run `python manage.py collectstatic` so `STATIC_ROOT` is populated behind a reverse proxy or static file server.
