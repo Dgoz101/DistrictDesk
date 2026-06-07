@@ -18,6 +18,12 @@
         <span class="badge">{{ ticket.status }}</span>
         <span class="badge badge--muted">{{ ticket.priority.name }}</span>
         <span class="badge badge--muted">{{ ticket.category.name }}</span>
+        {% if ticket.due_at %}
+          <span class="badge badge--muted">Due {{ ticket.due_at|date:"Y-m-d H:i" }}</span>
+          {% if ticket.is_overdue %}
+            <span class="badge badge--overdue">Overdue</span>
+          {% endif %}
+        {% endif %}
       </div>
     </header>
 
@@ -70,7 +76,7 @@
           <form class="card card--admin" method="post" action="{% url 'tickets:admin_update' ticket.pk %}">
             {% csrf_token %}
             <h3 class="ticket-admin__form-title">Update ticket</h3>
-            <p class="muted ticket-admin__hint">Status, priority, and category</p>
+            <p class="muted ticket-admin__hint">Status, priority, category, and optional due date</p>
             {% for field in admin_update_form %}
               <div class="form-row">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>

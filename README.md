@@ -11,7 +11,7 @@ DistrictDesk is intended for environments where technology support is essential 
 DistrictDesk supports core IT operations by allowing users to:
 
 - Submit and manage IT support tickets
-- Organize tickets by category, priority, and status
+- Organize tickets by category, priority, and status; **SLA due dates** from configurable priority targets (or manual override); **overdue** indicator on the administrator ticket list
 - Track assignments, comments, and ticket history
 - Optional **email notifications** when staff update a ticket (status, category, priority, assignment, or non-internal comments); each user can turn this off under **Email preferences** (`/accounts/email-preferences/`)
 - Manage device records, types, and device statuses
@@ -66,7 +66,7 @@ Additional project documentation is available in the `docs/` folder:
 
 ## Roles and permissions (RBAC)
 
-- **Administrator** — access to the **dashboard** (`/dashboard/`: ticket/device charts and KPIs; optional JSON at `/dashboard/api/summary/`), **device inventory** (list, add, edit under `/devices/`), **user management** at `/accounts/users/` (list and edit role / active status), **audit log** at `/accounts/audit/` (sign-in/out, role, lookup, and ticket category/priority changes), **ticket settings** at `/tickets/settings/` (categories and priority levels CRUD), and the full ticket workflow on list/detail (assign, update status/priority/category, internal comments, search/filter/sort on the ticket list). Enforced with `accounts.mixins.AdminRequiredMixin` (class-based views) and `accounts.decorators.admin_required` (function views).
+- **Administrator** — access to the **dashboard** (`/dashboard/`: ticket/device charts and KPIs; optional JSON at `/dashboard/api/summary/`), **device inventory** (list, add, edit under `/devices/`), **user management** at `/accounts/users/` (list and edit role / active status), **audit log** at `/accounts/audit/` (sign-in/out, role, lookup, and ticket category/priority changes), **ticket settings** at `/tickets/settings/` (categories and priority levels CRUD, including **SLA days per priority**), and the full ticket workflow on list/detail (assign, update status/priority/category/**due date**, internal comments, search/filter/sort/**overdue filter** on the ticket list). Enforced with `accounts.mixins.AdminRequiredMixin` (class-based views) and `accounts.decorators.admin_required` (function views).
 - **Standard User** — ticket flows for their own requests (Phase 3+). Cannot access administrator-only URLs (HTTP 403).
 
 ### Administrative management (FR-38–FR-39)

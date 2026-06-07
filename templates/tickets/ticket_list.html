@@ -58,11 +58,20 @@
             {% endfor %}
           </select>
         </label>
+        <label class="ticket-filters__field ticket-filters__field--checkbox">
+          <span class="ticket-filters__label">SLA</span>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="overdue" value="1" {% if request.GET.overdue == '1' %}checked{% endif %}>
+            Overdue only
+          </label>
+        </label>
         <label class="ticket-filters__field">
           <span class="ticket-filters__label">Sort</span>
           <select name="sort">
             <option value="-created_at" {% if request.GET.sort == '-created_at' or not request.GET.sort %}selected{% endif %}>Newest first</option>
             <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>Oldest first</option>
+            <option value="due_at" {% if request.GET.sort == 'due_at' %}selected{% endif %}>Due soonest</option>
+            <option value="-due_at" {% if request.GET.sort == '-due_at' %}selected{% endif %}>Due latest</option>
             <option value="priority" {% if request.GET.sort == 'priority' %}selected{% endif %}>Priority (low → high)</option>
             <option value="-priority" {% if request.GET.sort == '-priority' %}selected{% endif %}>Priority (high → low)</option>
             <option value="status" {% if request.GET.sort == 'status' %}selected{% endif %}>Status (A–Z)</option>
@@ -89,6 +98,9 @@
             <th scope="col">Status</th>
             <th scope="col">Priority</th>
             <th scope="col">Category</th>
+            {% if scope_all_tickets %}
+              <th scope="col">Due</th>
+            {% endif %}
             <th scope="col">Created</th>
           </tr>
         </thead>
@@ -112,6 +124,18 @@
               <td><span class="badge">{{ t.status }}</span></td>
               <td>{{ t.priority.name }}</td>
               <td>{{ t.category.name }}</td>
+              {% if scope_all_tickets %}
+                <td>
+                  {% if t.due_at %}
+                    {{ t.due_at|date:"Y-m-d H:i" }}
+                    {% if t.is_overdue %}
+                      <span class="badge badge--overdue">Overdue</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+              {% endif %}
               <td>{{ t.created_at|date:"Y-m-d H:i" }}</td>
             </tr>
           {% endfor %}

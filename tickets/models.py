@@ -33,6 +33,11 @@ class PriorityLevel(models.Model):
     """Configurable priority (FR-39): Low, Medium, High, Critical."""
     name = models.CharField(max_length=50)
     sort_order = models.IntegerField(default=0)
+    due_days = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text='SLA target: days from ticket creation until due (blank = no auto due date).',
+    )
 
     class Meta:
         db_table = 'tickets_prioritylevel'
@@ -79,6 +84,15 @@ class Ticket(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     closed_at = models.DateTimeField(null=True, blank=True)
+    due_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Target resolution date (from priority SLA or set manually).',
+    )
+    due_at_is_manual = models.BooleanField(
+        default=False,
+        help_text='When set, priority changes do not recalculate due_at.',
+    )
 
     class Meta:
         db_table = 'tickets_ticket'
@@ -90,10 +104,17 @@ class Ticket(models.Model):
             models.Index(fields=['priority']),
             models.Index(fields=['created_at']),
             models.Index(fields=['updated_at']),
+            models.Index(fields=['due_at']),
         ]
 
     def __str__(self):
         return self.title
+
+    @property
+    def is_overdue(self) -> bool:
+        from .sla_service import ticket_is_overdue
+
+        return ticket_is_overdue(self)
 
 
 class TicketAssignment(models.Model):

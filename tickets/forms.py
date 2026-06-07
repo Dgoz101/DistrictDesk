@@ -44,11 +44,24 @@ class TicketForm(forms.ModelForm):
 
 
 class TicketAdminUpdateForm(forms.ModelForm):
-    """Administrator: status, priority, category (FR-19–FR-20)."""
+    """Administrator: status, priority, category, optional manual due date (FR-19–FR-20)."""
 
     class Meta:
         model = Ticket
-        fields = ['status', 'priority', 'category']
+        fields = ['status', 'priority', 'category', 'due_at']
+        widgets = {
+            'due_at': forms.DateTimeInput(
+                attrs={'type': 'datetime-local'},
+                format='%Y-%m-%dT%H:%M',
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['due_at'].required = False
+        self.fields['due_at'].help_text = (
+            'Leave blank to use priority SLA on new tickets; clear to remove a manual date.'
+        )
 
 
 class TicketAssignForm(forms.Form):
@@ -82,7 +95,7 @@ class PriorityLevelForm(forms.ModelForm):
 
     class Meta:
         model = PriorityLevel
-        fields = ['name', 'sort_order']
+        fields = ['name', 'sort_order', 'due_days']
         widgets = {
             'name': forms.TextInput(attrs={'maxlength': 50}),
         }

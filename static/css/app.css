@@ -350,6 +350,20 @@ button:focus-visible,
   margin-left: 0.35rem;
 }
 
+.badge--overdue {
+  margin-left: 0.35rem;
+  color: #fff;
+  background: #b42318;
+  border-color: #b42318;
+}
+
+.checkbox-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9375rem;
+}
+
 .pagination {
   display: flex;
   align-items: center;

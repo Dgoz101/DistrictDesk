@@ -23,14 +23,19 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f"Created category: {c['name']}"))
 
         priorities = [
-            {'name': 'Low', 'sort_order': 0},
-            {'name': 'Medium', 'sort_order': 1},
-            {'name': 'High', 'sort_order': 2},
-            {'name': 'Critical', 'sort_order': 3},
+            {'name': 'Low', 'sort_order': 0, 'due_days': 14},
+            {'name': 'Medium', 'sort_order': 1, 'due_days': 7},
+            {'name': 'High', 'sort_order': 2, 'due_days': 3},
+            {'name': 'Critical', 'sort_order': 3, 'due_days': 1},
         ]
         for p in priorities:
-            _, created = PriorityLevel.objects.get_or_create(name=p['name'], defaults=p)
+            obj, created = PriorityLevel.objects.update_or_create(
+                name=p['name'],
+                defaults=p,
+            )
             if created:
                 self.stdout.write(self.style.SUCCESS(f"Created priority: {p['name']}"))
+            elif obj.due_days != p['due_days']:
+                self.stdout.write(self.style.SUCCESS(f"Updated priority SLA: {p['name']}"))
 
         self.stdout.write(self.style.SUCCESS('Ticket lookups ready.'))

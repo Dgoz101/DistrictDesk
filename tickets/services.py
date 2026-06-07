@@ -25,6 +25,12 @@ def record_status_change(ticket, old_status, new_status, user):
     )
 
 
+def _format_due_at(value):
+    if value is None:
+        return '—'
+    return timezone.localtime(value).strftime('%Y-%m-%d %H:%M')
+
+
 def apply_admin_ticket_update(
     ticket,
     user,
@@ -35,22 +41,43 @@ def apply_admin_ticket_update(
     old_status,
     old_category=None,
     old_priority=None,
+    due_at=None,
+    old_due_at=None,
+    due_at_changed: bool = False,
 ):
     """
-    Update category, priority, and status from admin form.
+    Update category, priority, status, and due date from admin form.
     Records status history only when status changes; sets closed_at for Resolved/Closed (FR-22).
     `old_status` must be captured before binding the POST form to the instance.
     """
     from core.audit import log_ticket_field_changes
+    from .sla_service import resolve_due_at_on_admin_update
 
     ticket.category = category
     ticket.priority = priority
     cat_change = None
     pri_change = None
+    due_change = None
     if old_category is not None and old_category.pk != category.pk:
         cat_change = (old_category.name, category.name)
-    if old_priority is not None and old_priority.pk != priority.pk:
+    priority_changed = old_priority is not None and old_priority.pk != priority.pk
+    if priority_changed:
         pri_change = (old_priority.name, priority.name)
+
+    old_manual = ticket.due_at_is_manual
+    new_due_at, new_manual = resolve_due_at_on_admin_update(
+        ticket,
+        priority=priority,
+        form_due_at=due_at,
+        due_at_changed=due_at_changed,
+        priority_changed=priority_changed,
+    )
+    if old_due_at != new_due_at or old_manual != new_manual:
+        due_change = (_format_due_at(old_due_at), _format_due_at(new_due_at))
+    ticket.due_at = new_due_at
+    ticket.due_at_is_manual = new_manual
+
+    update_fields = ['category', 'priority', 'due_at', 'due_at_is_manual', 'updated_at']
 
     if new_status != old_status:
         ticket.status = new_status
@@ -58,16 +85,18 @@ def apply_admin_ticket_update(
             ticket.closed_at = timezone.now()
         else:
             ticket.closed_at = None
-        ticket.save()
+        update_fields.extend(['status', 'closed_at'])
+        ticket.save(update_fields=update_fields)
         record_status_change(ticket, old_status, new_status, user)
     else:
-        ticket.save(update_fields=['category', 'priority', 'updated_at'])
+        ticket.save(update_fields=update_fields)
 
     log_ticket_field_changes(
         user,
         ticket,
         category_change=cat_change,
         priority_change=pri_change,
+        due_change=due_change,
     )
 
 

@@ -17,7 +17,7 @@ class TicketCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(PriorityLevel)
 class PriorityLevelAdmin(admin.ModelAdmin):
-    list_display = ('name', 'sort_order')
+    list_display = ('name', 'sort_order', 'due_days')
 
 
 class TicketAssignmentInline(admin.TabularInline):
@@ -44,7 +44,7 @@ class TicketAttachmentInline(admin.TabularInline):
 
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ('title', 'submitter', 'category', 'priority', 'status', 'created_at')
+    list_display = ('title', 'submitter', 'category', 'priority', 'status', 'due_at', 'created_at')
     list_filter = ('status', 'category', 'priority')
     search_fields = ('title', 'description')
     inlines = [

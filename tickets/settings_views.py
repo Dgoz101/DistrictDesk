@@ -13,7 +13,10 @@ from .models import PriorityLevel, TicketCategory
 
 
 def _lookup_fields(instance) -> dict[str, str]:
-    return {'name': instance.name, 'sort_order': str(instance.sort_order)}
+    fields = {'name': instance.name, 'sort_order': str(instance.sort_order)}
+    if hasattr(instance, 'due_days'):
+        fields['due_days'] = '' if instance.due_days is None else str(instance.due_days)
+    return fields
 
 
 class TicketSettingsHubView(AdminRequiredMixin, TemplateView):

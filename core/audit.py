@@ -190,13 +190,22 @@ def log_ticket_lookup_change(actor, instance, *, entity_type: str, old_fields: d
     )
 
 
-def log_ticket_field_changes(actor, ticket, *, category_change=None, priority_change=None) -> None:
-    """category_change / priority_change: optional (old_name, new_name) tuples."""
+def log_ticket_field_changes(
+    actor,
+    ticket,
+    *,
+    category_change=None,
+    priority_change=None,
+    due_change=None,
+) -> None:
+    """category_change / priority_change / due_change: optional (old, new) tuples."""
     changes = {}
     if category_change:
         changes['category'] = category_change
     if priority_change:
         changes['priority'] = priority_change
+    if due_change:
+        changes['due date'] = due_change
     if not changes:
         return
     log_field_changes(

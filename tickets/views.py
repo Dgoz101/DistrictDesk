@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import transaction
 from django.db.models import Prefetch, Q
+from django.utils import timezone
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -26,6 +27,7 @@ from .ticket_access import user_can_access_ticket
 from core.audit import build_ticket_activity_timeline
 
 from .services import apply_admin_ticket_update, assign_ticket, record_ticket_created
+from .sla_service import OPEN_STATUSES, apply_ticket_due_on_create
 
 
 class TicketListView(LoginRequiredMixin, ListView):
@@ -73,6 +75,10 @@ class TicketListView(LoginRequiredMixin, ListView):
                 assignments__is_current=True,
             ).distinct()
 
+        if self.request.GET.get('overdue') == '1':
+            now = timezone.now()
+            qs = qs.filter(due_at__lt=now, status__in=OPEN_STATUSES)
+
         sort = self.request.GET.get('sort', '-created_at')
         if sort == 'priority':
             qs = qs.order_by('priority__sort_order', '-created_at')
@@ -84,6 +90,10 @@ class TicketListView(LoginRequiredMixin, ListView):
             qs = qs.order_by('-status', '-created_at')
         elif sort == 'created_at':
             qs = qs.order_by('created_at')
+        elif sort == 'due_at':
+            qs = qs.order_by('due_at', '-created_at')
+        elif sort == '-due_at':
+            qs = qs.order_by('-due_at', '-created_at')
         else:
             qs = qs.order_by('-created_at')
         return qs
@@ -140,6 +150,8 @@ class TicketCreateView(LoginRequiredMixin, CreateView):
         form.instance.status = Ticket.Status.OPEN
         with transaction.atomic():
             response = super().form_valid(form)
+            self.object.refresh_from_db()
+            apply_ticket_due_on_create(self.object)
             n = save_ticket_attachments(
                 ticket=self.object,
                 user=self.request.user,
@@ -206,6 +218,7 @@ class TicketAdminUpdateView(AdminRequiredMixin, View):
         old_status = ticket.status
         old_category = ticket.category
         old_priority = ticket.priority
+        old_due_at = ticket.due_at
         form = TicketAdminUpdateForm(request.POST, instance=ticket)
         if form.is_valid():
             cd = form.cleaned_data
@@ -218,6 +231,9 @@ class TicketAdminUpdateView(AdminRequiredMixin, View):
                 old_status=old_status,
                 old_category=old_category,
                 old_priority=old_priority,
+                due_at=cd.get('due_at'),
+                old_due_at=old_due_at,
+                due_at_changed='due_at' in form.changed_data,
             )
             summary = []
             if old_status != cd['status']:
@@ -226,6 +242,14 @@ class TicketAdminUpdateView(AdminRequiredMixin, View):
                 summary.append(f'Category: {old_category.name} → {cd["category"].name}')
             if old_priority.pk != cd['priority'].pk:
                 summary.append(f'Priority: {old_priority.name} → {cd["priority"].name}')
+            if old_due_at != ticket.due_at:
+                old_label = timezone.localtime(old_due_at).strftime('%Y-%m-%d %H:%M') if old_due_at else '—'
+                new_label = (
+                    timezone.localtime(ticket.due_at).strftime('%Y-%m-%d %H:%M')
+                    if ticket.due_at
+                    else '—'
+                )
+                summary.append(f'Due: {old_label} → {new_label}')
             if summary:
                 email_updates.notify_submitter_ticket_changes(ticket, request, summary)
             messages.success(request, 'Ticket updated.')
