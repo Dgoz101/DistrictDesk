@@ -1,17 +1,20 @@
+import csv
 import mimetypes
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import transaction
-from django.db.models import Prefetch, Q
-from django.utils import timezone
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView
 
 from accounts.mixins import AdminRequiredMixin
+
+from .csv_io import EXPORT_FIELDNAMES, iter_export_rows
+from .list_queryset import build_ticket_list_queryset
 
 from .forms import (
     TicketAdminUpdateForm,
@@ -27,7 +30,35 @@ from .ticket_access import user_can_access_ticket
 from core.audit import build_ticket_activity_timeline
 
 from .services import apply_admin_ticket_update, assign_ticket, record_ticket_created
-from .sla_service import OPEN_STATUSES, apply_ticket_due_on_create
+from .sla_service import apply_ticket_due_on_create
+
+
+class _Echo:
+    """Writer for StreamingHttpResponse CSV."""
+
+    def write(self, value):
+        return value
+
+
+class TicketExportCsvView(AdminRequiredMixin, View):
+    """Streaming CSV export of tickets matching the current admin list filters."""
+
+    def get(self, request):
+        qs = build_ticket_list_queryset(request)
+
+        def rows():
+            yield EXPORT_FIELDNAMES
+            for row in iter_export_rows(qs):
+                yield [row.get(h, '') for h in EXPORT_FIELDNAMES]
+
+        pseudo_buffer = _Echo()
+        writer = csv.writer(pseudo_buffer)
+        response = StreamingHttpResponse(
+            (writer.writerow(r) for r in rows()),
+            content_type='text/csv; charset=utf-8',
+        )
+        response['Content-Disposition'] = 'attachment; filename="tickets_export.csv"'
+        return response
 
 
 class TicketListView(LoginRequiredMixin, ListView):
@@ -38,65 +69,7 @@ class TicketListView(LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        qs = Ticket.objects.select_related(
-            'category', 'priority', 'submitter', 'device', 'location'
-        ).prefetch_related(
-            Prefetch(
-                'assignments',
-                queryset=TicketAssignment.objects.filter(is_current=True).select_related(
-                    'assigned_to'
-                ),
-            )
-        )
-
-        if not self.request.user.is_administrator:
-            return qs.filter(submitter=self.request.user).order_by('-created_at')
-
-        q = self.request.GET.get('q', '').strip()
-        if q:
-            qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
-
-        status = self.request.GET.get('status')
-        if status:
-            qs = qs.filter(status=status)
-
-        category = self.request.GET.get('category')
-        if category:
-            qs = qs.filter(category_id=category)
-
-        priority = self.request.GET.get('priority')
-        if priority:
-            qs = qs.filter(priority_id=priority)
-
-        assigned = self.request.GET.get('assigned')
-        if assigned:
-            qs = qs.filter(
-                assignments__assigned_to_id=assigned,
-                assignments__is_current=True,
-            ).distinct()
-
-        if self.request.GET.get('overdue') == '1':
-            now = timezone.now()
-            qs = qs.filter(due_at__lt=now, status__in=OPEN_STATUSES)
-
-        sort = self.request.GET.get('sort', '-created_at')
-        if sort == 'priority':
-            qs = qs.order_by('priority__sort_order', '-created_at')
-        elif sort == '-priority':
-            qs = qs.order_by('-priority__sort_order', '-created_at')
-        elif sort == 'status':
-            qs = qs.order_by('status', '-created_at')
-        elif sort == '-status':
-            qs = qs.order_by('-status', '-created_at')
-        elif sort == 'created_at':
-            qs = qs.order_by('created_at')
-        elif sort == 'due_at':
-            qs = qs.order_by('due_at', '-created_at')
-        elif sort == '-due_at':
-            qs = qs.order_by('-due_at', '-created_at')
-        else:
-            qs = qs.order_by('-created_at')
-        return qs
+        return build_ticket_list_queryset(self.request)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

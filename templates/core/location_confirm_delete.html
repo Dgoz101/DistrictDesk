@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Delete location — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'core:location_list' %}">← Locations</a></p>
+
+  <section class="card card--form">
+    <h1 class="page-title">Delete location</h1>
+    <p>
+      Are you sure you want to delete <strong>{{ object.name }}</strong>?
+      Deletion is blocked if any tickets or devices still reference this location.
+    </p>
+
+    <form method="post" class="form">
+      {% csrf_token %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Delete</button>
+        <a href="{% url 'core:location_list' %}" class="btn btn--ghost">Cancel</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

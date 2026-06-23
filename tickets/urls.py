@@ -18,6 +18,7 @@ from .views import (
     TicketCommentAddView,
     TicketCreateView,
     TicketDetailView,
+    TicketExportCsvView,
     TicketListView,
 )
 
@@ -33,6 +34,7 @@ urlpatterns = [
     path('settings/priorities/new/', PriorityLevelCreateView.as_view(), name='priority_create'),
     path('settings/priorities/<int:pk>/edit/', PriorityLevelUpdateView.as_view(), name='priority_edit'),
     path('settings/priorities/<int:pk>/delete/', PriorityLevelDeleteView.as_view(), name='priority_delete'),
+    path('export.csv', TicketExportCsvView.as_view(), name='export_csv'),
     path('', TicketListView.as_view(), name='list'),
     path('new/', TicketCreateView.as_view(), name='create'),
     path(

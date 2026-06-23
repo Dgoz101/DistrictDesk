@@ -39,7 +39,9 @@ class Phase2RBACMatrixTests(TestCase):
             '/devices/',
             '/devices/import/',
             '/devices/export.csv',
+            '/tickets/export.csv',
             '/accounts/users/',
+            '/locations/',
             '/accounts/audit/',
             '/tickets/settings/',
         ):
@@ -56,7 +58,9 @@ class Phase2RBACMatrixTests(TestCase):
             '/devices/',
             '/devices/import/',
             '/devices/export.csv',
+            '/tickets/export.csv',
             '/accounts/users/',
+            '/locations/',
             '/accounts/audit/',
             '/tickets/settings/',
         ):
@@ -70,7 +74,9 @@ class Phase2RBACMatrixTests(TestCase):
             '/devices/',
             '/devices/import/',
             '/devices/export.csv',
+            '/tickets/export.csv',
             '/accounts/users/',
+            '/locations/',
             '/accounts/audit/',
             '/tickets/settings/',
         ):
@@ -95,6 +101,7 @@ class Phase2RBACMatrixTests(TestCase):
         self.assertNotContains(r, 'href="/dashboard/"')
         self.assertNotContains(r, 'href="/devices/"')
         self.assertNotContains(r, 'href="/accounts/users/"')
+        self.assertNotContains(r, 'href="/locations/"')
         self.assertNotContains(r, 'href="/tickets/settings/"')
 
     def test_nav_bar_administrator_has_admin_links(self):
@@ -104,5 +111,6 @@ class Phase2RBACMatrixTests(TestCase):
         self.assertContains(r, 'href="/dashboard/"')
         self.assertContains(r, 'href="/devices/"')
         self.assertContains(r, 'href="/accounts/users/"')
+        self.assertContains(r, 'href="/locations/"')
         self.assertContains(r, 'href="/accounts/audit/"')
         self.assertContains(r, 'href="/tickets/settings/"')

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Locations — DistrictDesk{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1 class="page-title">Locations</h1>
+    <a class="btn btn--primary" href="{% url 'core:location_create' %}">Add location</a>
+  </div>
+  <p class="muted">
+    Buildings and rooms used when submitting tickets and assigning devices.
+  </p>
+
+  {% if locations %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Description</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for loc in locations %}
+            <tr>
+              <td>{{ loc.name }}</td>
+              <td>{% if loc.description %}{{ loc.description|truncatewords:20 }}{% else %}<span class="muted">—</span>{% endif %}</td>
+              <td>
+                <a href="{% url 'core:location_edit' loc.pk %}">Edit</a>
+                ·
+                <a href="{% url 'core:location_delete' loc.pk %}">Delete</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+      <nav class="pagination" aria-label="Location pages">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span class="pagination__meta">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <p class="muted">No locations yet. <a href="{% url 'core:location_create' %}">Add one</a>.</p>
+  {% endif %}
+{% endblock %}

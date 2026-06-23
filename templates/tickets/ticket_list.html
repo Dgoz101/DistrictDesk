@@ -5,7 +5,12 @@
 {% block content %}
   <div class="page-head">
     <h1 class="page-title">Tickets</h1>
-    <a class="btn btn--primary" href="{% url 'tickets:create' %}">New ticket</a>
+    <div class="page-head__actions">
+      {% if scope_all_tickets %}
+        <a class="btn btn--secondary" href="{% url 'tickets:export_csv' %}{% if filter_query %}?{{ filter_query }}{% endif %}">Export CSV</a>
+      {% endif %}
+      <a class="btn btn--primary" href="{% url 'tickets:create' %}">New ticket</a>
+    </div>
   </div>
   <p class="muted">
     {% if scope_all_tickets %}

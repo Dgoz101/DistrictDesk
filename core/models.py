@@ -9,6 +9,7 @@ class Location(models.Model):
 
     class Meta:
         db_table = 'core_location'
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -29,6 +30,7 @@ class AdminAuditEntry(models.Model):
         AUTH = 'auth', 'Authentication'
         TICKET_CATEGORY = 'ticket_category', 'Ticket category'
         PRIORITY_LEVEL = 'priority_level', 'Priority level'
+        LOCATION = 'location', 'Location'
         TICKET = 'ticket', 'Ticket'
 
     action = models.CharField(max_length=10, choices=Action.choices)
