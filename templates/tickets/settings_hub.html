@@ -6,10 +6,11 @@
   <div class="page-head">
     <h1 class="page-title">Ticket settings</h1>
   </div>
-  <p class="muted">Configure categories and priority levels used on support tickets (FR-39).</p>
+  <p class="muted">Configure categories, priority levels, and canned comment snippets used on support tickets (FR-39).</p>
 
   <ul class="settings-hub-links">
     <li><a href="{% url 'tickets:category_list' %}">Categories</a></li>
     <li><a href="{% url 'tickets:priority_list' %}">Priority levels</a></li>
+    <li><a href="{% url 'tickets:canned_list' %}">Canned responses</a></li>
   </ul>
 {% endblock %}

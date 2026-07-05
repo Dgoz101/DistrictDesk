@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Canned responses — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'tickets:settings_hub' %}">← Ticket settings</a></p>
+
+  <div class="page-head">
+    <h1 class="page-title">Canned responses</h1>
+    <a class="btn btn--primary" href="{% url 'tickets:canned_create' %}">Add snippet</a>
+  </div>
+  <p class="muted">Reusable text administrators can insert when posting comments or internal notes.</p>
+
+  {% if snippets %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Title</th>
+            <th scope="col">Preview</th>
+            <th scope="col">Sort</th>
+            <th scope="col">Active</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in snippets %}
+            <tr>
+              <td>{{ s.title }}</td>
+              <td class="muted">{{ s.body|truncatewords:12 }}</td>
+              <td>{{ s.sort_order }}</td>
+              <td>{% if s.is_active %}Yes{% else %}<span class="muted">No</span>{% endif %}</td>
+              <td>
+                <a href="{% url 'tickets:canned_edit' s.pk %}">Edit</a>
+                ·
+                <a href="{% url 'tickets:canned_delete' s.pk %}">Delete</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+      <nav class="pagination" aria-label="Canned response pages">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span class="pagination__meta">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <p class="muted">No snippets yet. <a href="{% url 'tickets:canned_create' %}">Add one</a>.</p>
+  {% endif %}
+{% endblock %}

@@ -8,6 +8,12 @@ from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from devices.models import Device
+from tickets.aging import (
+    aging_bucket_counts,
+    aging_open_count,
+    aging_open_preview,
+    aging_threshold_days,
+)
 from tickets.models import Ticket
 
 
@@ -107,6 +113,11 @@ def get_dashboard_data():
         for d in warranty_qs.order_by('warranty_end_date')[:10]
     ]
 
+    threshold = aging_threshold_days()
+    aging_buckets = aging_bucket_counts()
+    aging_count = aging_open_count(threshold_days=threshold)
+    aging_preview = aging_open_preview(threshold_days=threshold)
+
     return {
         'summary': {
             'total_tickets': total_tickets,
@@ -114,14 +125,22 @@ def get_dashboard_data():
             'total_devices': total_devices,
             'avg_resolution_hours': avg_resolution_hours,
             'warranty_expiring_count': warranty_expiring_count,
+            'aging_threshold_days': threshold,
+            'aging_open_count': aging_count,
         },
         'chart_data': {
             'tickets_by_status': {'labels': status_labels, 'counts': status_counts},
             'tickets_by_category': {'labels': category_labels, 'counts': category_counts},
             'tickets_trend': {'labels': trend_labels, 'counts': trend_counts},
+            'tickets_aging': {
+                'labels': [b['label'] for b in aging_buckets],
+                'counts': [b['count'] for b in aging_buckets],
+                'bucket_ids': [b['id'] for b in aging_buckets],
+            },
             'devices_by_type': {'labels': dtype_labels, 'counts': dtype_counts},
             'devices_by_status': {'labels': dstatus_labels, 'counts': dstatus_counts},
         },
         'warranty_expiring_preview': warranty_expiring_preview,
+        'aging_open_preview': aging_preview,
         'generated_at': timezone.now(),
     }

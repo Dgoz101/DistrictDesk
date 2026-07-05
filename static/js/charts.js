@@ -42,6 +42,7 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        onClick: opts && opts.onClick ? opts.onClick : undefined,
         plugins: {
           legend: { display: false },
         },
@@ -150,6 +151,19 @@
 
   var tr = cd.tickets_trend || {};
   lineChart('chart-tickets-trend', tr.labels, tr.counts);
+
+  var ta = cd.tickets_aging || {};
+  barChart('chart-tickets-aging', ta.labels, ta.counts, {
+    label: 'Open tickets',
+    onClick: function (_evt, elements) {
+      if (!elements.length || !ta.bucket_ids) return;
+      var bucket = ta.bucket_ids[elements[0].index];
+      if (bucket) {
+        window.location.href =
+          '/tickets/?aging_bucket=' + encodeURIComponent(bucket) + '&sort=created_at';
+      }
+    },
+  });
 
   var dt = cd.devices_by_type || {};
   doughnutChart('chart-devices-type', dt.labels, dt.counts);

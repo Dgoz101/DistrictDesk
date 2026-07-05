@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import (
+    CannedResponse,
     PriorityLevel,
     Ticket,
     TicketAssignment,
@@ -18,6 +19,13 @@ class TicketCategoryAdmin(admin.ModelAdmin):
 @admin.register(PriorityLevel)
 class PriorityLevelAdmin(admin.ModelAdmin):
     list_display = ('name', 'sort_order', 'due_days')
+
+
+@admin.register(CannedResponse)
+class CannedResponseAdmin(admin.ModelAdmin):
+    list_display = ('title', 'sort_order', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('title', 'body')
 
 
 class TicketAssignmentInline(admin.TabularInline):

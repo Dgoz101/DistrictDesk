@@ -4,6 +4,7 @@ import mimetypes
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import transaction
+from django.db.models import Prefetch
 from django.http import FileResponse, Http404, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -25,12 +26,13 @@ from .forms import (
 from . import email_updates
 from .attachment_service import save_ticket_attachments
 from .attachment_validation import attachment_accept_attribute, attachment_help_text, validate_attachment_files
-from .models import Ticket, TicketAssignment, TicketAttachment, TicketComment
+from .models import CannedResponse, Ticket, TicketAssignment, TicketAttachment, TicketComment
 from .ticket_access import user_can_access_ticket
 from core.audit import build_ticket_activity_timeline
 
 from .services import apply_admin_ticket_update, assign_ticket, record_ticket_created
 from .sla_service import apply_ticket_due_on_create
+from .aging import TICKET_AGING_BUCKETS
 
 
 class _Echo:
@@ -90,7 +92,19 @@ class TicketListView(LoginRequiredMixin, ListView):
                 'username'
             )
             ctx['status_choices'] = Ticket.Status.choices
+            ctx['aging_filter_label'] = _aging_filter_label(self.request.GET)
         return ctx
+
+
+def _aging_filter_label(get_params) -> str:
+    bucket = (get_params.get('aging_bucket') or '').strip()
+    for bucket_id, label, _min, _max in TICKET_AGING_BUCKETS:
+        if bucket == bucket_id:
+            return f'Open tickets aged {label.lower()}'
+    raw = (get_params.get('aging_days') or '').strip()
+    if raw.isdigit() and int(raw) > 0:
+        return f'Open tickets ≥ {raw} days old'
+    return ''
 
 
 class TicketCreateView(LoginRequiredMixin, CreateView):
@@ -180,6 +194,11 @@ class TicketDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             ctx['admin_update_form'] = TicketAdminUpdateForm(instance=ticket)
             ctx['assign_form'] = TicketAssignForm()
             ctx['comment_form'] = TicketCommentForm()
+            snippets = CannedResponse.objects.filter(is_active=True).order_by('sort_order', 'title')
+            ctx['canned_responses'] = snippets
+            ctx['canned_responses_payload'] = [
+                {'id': s.pk, 'title': s.title, 'body': s.body} for s in snippets
+            ]
         return ctx
 
 

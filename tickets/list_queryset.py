@@ -3,6 +3,7 @@ from django.db.models import Prefetch, Q
 from django.utils import timezone
 
 from .models import Ticket, TicketAssignment
+from .aging import apply_aging_list_filters
 from .sla_service import OPEN_STATUSES
 
 
@@ -46,6 +47,8 @@ def _apply_admin_list_filters(qs, params):
     if params.get('overdue') == '1':
         now = timezone.now()
         qs = qs.filter(due_at__lt=now, status__in=OPEN_STATUSES)
+
+    qs = apply_aging_list_filters(qs, params)
 
     sort = params.get('sort', '-created_at')
     if sort == 'priority':

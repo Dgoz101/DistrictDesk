@@ -8,8 +8,8 @@ from accounts.mixins import AdminRequiredMixin
 from core.audit import log_create, log_delete, log_ticket_lookup_change
 from core.models import AdminAuditEntry
 
-from .forms import PriorityLevelForm, TicketCategoryForm
-from .models import PriorityLevel, TicketCategory
+from .forms import CannedResponseForm, PriorityLevelForm, TicketCategoryForm
+from .models import CannedResponse, PriorityLevel, TicketCategory
 
 
 def _lookup_fields(instance) -> dict[str, str]:
@@ -17,6 +17,15 @@ def _lookup_fields(instance) -> dict[str, str]:
     if hasattr(instance, 'due_days'):
         fields['due_days'] = '' if instance.due_days is None else str(instance.due_days)
     return fields
+
+
+def _canned_fields(instance) -> dict[str, str]:
+    return {
+        'title': instance.title,
+        'body': instance.body,
+        'sort_order': str(instance.sort_order),
+        'is_active': 'Yes' if instance.is_active else 'No',
+    }
 
 
 class TicketSettingsHubView(AdminRequiredMixin, TemplateView):
@@ -176,3 +185,74 @@ class PriorityLevelDeleteView(AdminRequiredMixin, DeleteView):
                 'This priority cannot be deleted while tickets still reference it.',
             )
         return redirect(self.get_success_url())
+
+
+class CannedResponseListView(AdminRequiredMixin, ListView):
+    model = CannedResponse
+    template_name = 'tickets/cannedresponse_list.html'
+    context_object_name = 'snippets'
+    paginate_by = 25
+
+    def get_queryset(self):
+        return CannedResponse.objects.order_by('sort_order', 'title')
+
+
+class CannedResponseCreateView(AdminRequiredMixin, CreateView):
+    model = CannedResponse
+    form_class = CannedResponseForm
+    template_name = 'tickets/cannedresponse_form.html'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        log_create(
+            self.request.user,
+            entity_type=AdminAuditEntry.EntityType.CANNED_RESPONSE,
+            instance=self.object,
+            fields=_canned_fields(self.object),
+        )
+        messages.success(self.request, 'Canned response created.')
+        return response
+
+    def get_success_url(self):
+        return reverse('tickets:canned_list')
+
+
+class CannedResponseUpdateView(AdminRequiredMixin, UpdateView):
+    model = CannedResponse
+    form_class = CannedResponseForm
+    template_name = 'tickets/cannedresponse_form.html'
+
+    def form_valid(self, form):
+        old_fields = _canned_fields(self.get_object())
+        response = super().form_valid(form)
+        log_ticket_lookup_change(
+            self.request.user,
+            self.object,
+            entity_type=AdminAuditEntry.EntityType.CANNED_RESPONSE,
+            old_fields=old_fields,
+            new_fields=_canned_fields(self.object),
+        )
+        messages.success(self.request, 'Canned response updated.')
+        return response
+
+    def get_success_url(self):
+        return reverse('tickets:canned_list')
+
+
+class CannedResponseDeleteView(AdminRequiredMixin, DeleteView):
+    model = CannedResponse
+    template_name = 'tickets/cannedresponse_confirm_delete.html'
+    success_url = reverse_lazy('tickets:canned_list')
+
+    def form_valid(self, form):
+        label = self.object.title
+        pk = self.object.pk
+        self.object.delete()
+        log_delete(
+            self.request.user,
+            entity_type=AdminAuditEntry.EntityType.CANNED_RESPONSE,
+            object_label=label,
+            object_id=pk,
+        )
+        messages.success(self.request, 'Canned response deleted.')
+        return redirect(self.success_url)

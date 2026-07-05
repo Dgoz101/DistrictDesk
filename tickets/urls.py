@@ -1,6 +1,10 @@
 from django.urls import path
 
 from .settings_views import (
+    CannedResponseCreateView,
+    CannedResponseDeleteView,
+    CannedResponseListView,
+    CannedResponseUpdateView,
     PriorityLevelCreateView,
     PriorityLevelDeleteView,
     PriorityLevelListView,
@@ -34,6 +38,10 @@ urlpatterns = [
     path('settings/priorities/new/', PriorityLevelCreateView.as_view(), name='priority_create'),
     path('settings/priorities/<int:pk>/edit/', PriorityLevelUpdateView.as_view(), name='priority_edit'),
     path('settings/priorities/<int:pk>/delete/', PriorityLevelDeleteView.as_view(), name='priority_delete'),
+    path('settings/canned/', CannedResponseListView.as_view(), name='canned_list'),
+    path('settings/canned/new/', CannedResponseCreateView.as_view(), name='canned_create'),
+    path('settings/canned/<int:pk>/edit/', CannedResponseUpdateView.as_view(), name='canned_edit'),
+    path('settings/canned/<int:pk>/delete/', CannedResponseDeleteView.as_view(), name='canned_delete'),
     path('export.csv', TicketExportCsvView.as_view(), name='export_csv'),
     path('', TicketListView.as_view(), name='list'),
     path('new/', TicketCreateView.as_view(), name='create'),

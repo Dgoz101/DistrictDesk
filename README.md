@@ -66,7 +66,7 @@ Additional project documentation is available in the `docs/` folder:
 
 ## Roles and permissions (RBAC)
 
-- **Administrator** — access to the **dashboard** (`/dashboard/`: ticket/device charts and KPIs; optional JSON at `/dashboard/api/summary/`), **device inventory** (list, add, edit under `/devices/`), **user management** at `/accounts/users/` (list and edit role / active status), **locations** at `/locations/` (buildings/rooms CRUD for tickets and devices), **audit log** at `/accounts/audit/` (sign-in/out, role, lookup, and ticket category/priority changes), **ticket settings** at `/tickets/settings/` (categories and priority levels CRUD, including **SLA days per priority**), and the full ticket workflow on list/detail (assign, update status/priority/category/**due date**, internal comments, search/filter/sort/**overdue filter** on the ticket list). Enforced with `accounts.mixins.AdminRequiredMixin` (class-based views) and `accounts.decorators.admin_required` (function views).
+- **Administrator** — access to the **dashboard** (`/dashboard/`: ticket/device charts and KPIs including **aging open tickets**; optional JSON at `/dashboard/api/summary/`), **device inventory** (list, add, edit under `/devices/`), **user management** at `/accounts/users/` (list and edit role / active status), **locations** at `/locations/` (buildings/rooms CRUD for tickets and devices), **audit log** at `/accounts/audit/` (sign-in/out, role, lookup, and ticket category/priority changes), **ticket settings** at `/tickets/settings/` (categories, priority levels, and **canned responses** CRUD, including **SLA days per priority**), and the full ticket workflow on list/detail (assign, update status/priority/category/**due date**, comments/internal notes with **snippet insert**, search/filter/sort/**overdue filter** on the ticket list). Enforced with `accounts.mixins.AdminRequiredMixin` (class-based views) and `accounts.decorators.admin_required` (function views).
 - **Standard User** — ticket flows for their own requests (Phase 3+). Cannot access administrator-only URLs (HTTP 403).
 
 ### Administrative management (FR-38–FR-39)
@@ -87,7 +87,7 @@ Additional project documentation is available in the `docs/` folder:
 | `/locations/`, `/locations/new/`, `/locations/<id>/edit/`, `/locations/<id>/delete/` | Location CRUD (administrators) |
 | `/accounts/audit/` | Administrator audit log (filter by entity type) |
 | `/tickets/`, `/tickets/new/` (optional file attachments), `/tickets/export.csv` (admin; respects list filters), `/tickets/attachments/<id>/download/` | Ticket list, create, CSV export, and attachment download |
-| `/tickets/settings/`, `/tickets/settings/categories/…`, `/tickets/settings/priorities/…` | Ticket lookup CRUD (administrators) |
+| `/tickets/settings/`, `/tickets/settings/categories/…`, `/tickets/settings/priorities/…`, `/tickets/settings/canned/…` | Ticket lookup CRUD and canned comment snippets (administrators) |
 | `/tickets/<id>/`, `/tickets/<id>/admin/update/`, `/assign/`, `/comment/` | Ticket detail and admin actions |
 | `/devices/`, `/devices/settings/` (fine types, late fee policy), `/devices/fines/`, `/devices/<id>/return/` (inspection), `/devices/<id>/` (detail, checkout), … | Device inventory, **checkout fines** (damage + late fees), CSV, QR labels, warranty filters (administrators except public report) |
 | `/dashboard/`, `/dashboard/api/summary/` | Dashboard and optional JSON summary (administrators) |
@@ -105,6 +105,7 @@ Additional project documentation is available in the `docs/` folder:
 | `TICKET_ATTACHMENT_MAX_BYTES` | Optional per-file limit (default 5 MB) |
 | `TICKET_ATTACHMENT_MAX_FILES` | Optional max files per new ticket (default 5) |
 | `TICKET_ATTACHMENT_MAX_TOTAL_BYTES` | Optional total size per submit (default 15 MB) |
+| `DASHBOARD_TICKET_AGING_DAYS` | Open tickets older than this many days appear in the dashboard aging KPI (default 7) |
 | `DEFAULT_FROM_EMAIL` | From address for outbound mail (password reset, etc.) |
 
 Run instructions: see **Setup**, **Database Configuration**, **Run Migrations**, **Seed Initial Data**, and **Create an Admin User** above. For production, set `DJANGO_ENV=production`, a strong `DJANGO_SECRET_KEY`, and real `DJANGO_ALLOWED_HOSTS`, then run `python manage.py collectstatic` so `STATIC_ROOT` is populated behind a reverse proxy or static file server.
@@ -325,4 +326,5 @@ DistrictDesk includes custom management commands for initializing lookup data:
 
 - `seed_roles` – creates Standard User and Administrator roles
 - `seed_ticket_lookups` – creates default ticket categories and priority levels
+- `seed_canned_responses` – creates default canned comment snippets for administrators
 - `seed_device_lookups` – creates default device types and statuses

@@ -25,6 +25,12 @@
         </span>
         <span class="dashboard-kpi__label">Avg. resolution time</span>
       </div>
+      <div class="dashboard-kpi dashboard-kpi--link">
+        <a href="{% url 'tickets:list' %}?aging_days={{ s.aging_threshold_days }}&amp;sort=created_at" class="dashboard-kpi__link">
+          <span class="dashboard-kpi__value">{{ s.aging_open_count }}</span>
+          <span class="dashboard-kpi__label">Open ≥ {{ s.aging_threshold_days }} days</span>
+        </a>
+      </div>
       <div class="dashboard-kpi">
         <span class="dashboard-kpi__value">{{ s.total_devices }}</span>
         <span class="dashboard-kpi__label">Devices</span>
@@ -33,6 +39,36 @@
         <span class="dashboard-kpi__value">{{ s.warranty_expiring_count }}</span>
         <span class="dashboard-kpi__label">Warranties expiring (90d)</span>
       </div>
+    </section>
+  {% endwith %}
+
+  {% with aging=dashboard_payload.aging_open_preview threshold=dashboard_payload.summary.aging_threshold_days %}
+    <section class="card" style="margin-bottom: 1.5rem;">
+      <h2 class="page-title" style="font-size: 1.1rem;">Aging open tickets</h2>
+      <p class="muted" style="margin-top: 0;">
+        Open tickets that have been open at least {{ threshold }} days.
+        <a href="{% url 'tickets:list' %}?aging_days={{ threshold }}&amp;sort=created_at">View filtered ticket list</a>
+      </p>
+      {% if aging %}
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th scope="col">Title</th><th scope="col">Status</th><th scope="col">Created</th></tr>
+            </thead>
+            <tbody>
+              {% for row in aging %}
+                <tr>
+                  <td><a href="{% url 'tickets:detail' row.id %}">{{ row.title }}</a></td>
+                  <td>{{ row.status }}</td>
+                  <td>{{ row.created_at }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="muted">No open tickets past the aging threshold.</p>
+      {% endif %}
     </section>
   {% endwith %}
 
@@ -70,6 +106,11 @@
     <div class="dashboard-chart-card">
       <h2 class="dashboard-chart-card__title">Tickets by category</h2>
       <div class="dashboard-chart-card__canvas"><canvas id="chart-tickets-category" aria-label="Tickets by category"></canvas></div>
+    </div>
+    <div class="dashboard-chart-card dashboard-chart-card--wide">
+      <h2 class="dashboard-chart-card__title">Open tickets by age</h2>
+      <p class="muted dashboard-chart-card__hint">Click a bar to view matching tickets (oldest first).</p>
+      <div class="dashboard-chart-card__canvas"><canvas id="chart-tickets-aging" aria-label="Open tickets by age"></canvas></div>
     </div>
     <div class="dashboard-chart-card dashboard-chart-card--wide">
       <h2 class="dashboard-chart-card__title">New tickets (last 14 days)</h2>

@@ -15,6 +15,7 @@
   <p class="muted">
     {% if scope_all_tickets %}
       Showing <strong>all</strong> tickets (administrator view).
+      {% if aging_filter_label %}<strong> · {{ aging_filter_label }}</strong>{% endif %}
     {% else %}
       Showing <strong>your</strong> submitted tickets.
     {% endif %}

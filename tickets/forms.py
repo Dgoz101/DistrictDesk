@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from core.models import Location
 from devices.models import Device
 
-from .models import PriorityLevel, Ticket, TicketCategory
+from .models import CannedResponse, PriorityLevel, Ticket, TicketCategory
 
 User = get_user_model()
 
@@ -101,12 +101,24 @@ class PriorityLevelForm(forms.ModelForm):
         }
 
 
+class CannedResponseForm(forms.ModelForm):
+    """Administrator: reusable comment snippet."""
+
+    class Meta:
+        model = CannedResponse
+        fields = ['title', 'body', 'sort_order', 'is_active']
+        widgets = {
+            'title': forms.TextInput(attrs={'maxlength': 100}),
+            'body': forms.Textarea(attrs={'rows': 6}),
+        }
+
+
 class TicketCommentForm(forms.Form):
     """Internal or visible comment (FR-21)."""
 
     body = forms.CharField(
         label='Comment',
-        widget=forms.Textarea(attrs={'rows': 4}),
+        widget=forms.Textarea(attrs={'rows': 4, 'id': 'ticket-comment-body'}),
     )
     is_internal = forms.BooleanField(
         label='Internal note (hidden from requester)',

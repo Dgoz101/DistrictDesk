@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Delete canned response — DistrictDesk{% endblock %}
+
+{% block content %}
+  <p class="back-link"><a href="{% url 'tickets:canned_list' %}">← Canned responses</a></p>
+
+  <section class="card card--form">
+    <h1 class="page-title">Delete canned response</h1>
+    <p>Are you sure you want to delete <strong>{{ object.title }}</strong>? Existing comments are not affected.</p>
+
+    <form method="post" class="form">
+      {% csrf_token %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Delete</button>
+        <a href="{% url 'tickets:canned_list' %}" class="btn btn--ghost">Cancel</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

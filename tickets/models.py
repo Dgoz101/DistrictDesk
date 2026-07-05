@@ -144,6 +144,21 @@ class TicketAssignment(models.Model):
         return f'{self.ticket_id} → {self.assigned_to}'
 
 
+class CannedResponse(models.Model):
+    """Reusable snippet administrators can insert into ticket comments (FR-39 extension)."""
+    title = models.CharField(max_length=100)
+    body = models.TextField(help_text='Text inserted into the comment field when selected.')
+    sort_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'tickets_cannedresponse'
+        ordering = ['sort_order', 'title']
+
+    def __str__(self):
+        return self.title
+
+
 class TicketComment(models.Model):
     """Internal notes or comments on a ticket (FR-21)."""
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='comments')

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ ticket.title }} — DistrictDesk{% endblock %}
 
@@ -110,6 +111,23 @@
           <form class="card card--admin card--admin-wide" method="post" action="{% url 'tickets:comment_add' ticket.pk %}">
             {% csrf_token %}
             <h3 class="ticket-admin__form-title">Add comment</h3>
+            {% if canned_responses %}
+              <div class="canned-responses form-row">
+                <label for="canned-response-picker">Insert canned response</label>
+                <div class="canned-responses__controls">
+                  <select id="canned-response-picker" class="canned-responses__select">
+                    <option value="">Choose snippet…</option>
+                    {% for s in canned_responses %}
+                      <option value="{{ s.pk }}">{{ s.title }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="button" class="btn btn--ghost" id="canned-response-insert">Insert</button>
+                  <a class="btn btn--ghost" href="{% url 'tickets:canned_list' %}">Manage snippets</a>
+                </div>
+                <p class="muted canned-responses__hint">Inserts into the comment box; edit before posting. Works for public comments and internal notes.</p>
+              </div>
+              {{ canned_responses_payload|json_script:"canned-responses-data" }}
+            {% endif %}
             <div class="form-row">
               <label for="{{ comment_form.body.id_for_label }}">{{ comment_form.body.label }}</label>
               {{ comment_form.body }}
@@ -172,4 +190,10 @@
       {% endwith %}
     </section>
   </article>
+{% endblock %}
+
+{% block extra_js %}
+  {% if user.is_administrator and canned_responses %}
+    <script src="{% static 'js/canned-responses.js' %}"></script>
+  {% endif %}
 {% endblock %}

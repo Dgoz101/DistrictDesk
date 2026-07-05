@@ -121,3 +121,6 @@ PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '').strip().rstrip('/')
 
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'districtdesk@localhost')
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Dashboard: open tickets older than this many days count as "aging"
+DASHBOARD_TICKET_AGING_DAYS = int(os.environ.get('DASHBOARD_TICKET_AGING_DAYS', '7'))

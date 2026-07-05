@@ -32,6 +32,7 @@ class AdminAuditEntry(models.Model):
         PRIORITY_LEVEL = 'priority_level', 'Priority level'
         LOCATION = 'location', 'Location'
         TICKET = 'ticket', 'Ticket'
+        CANNED_RESPONSE = 'canned_response', 'Canned response'
 
     action = models.CharField(max_length=10, choices=Action.choices)
     entity_type = models.CharField(max_length=20, choices=EntityType.choices)
