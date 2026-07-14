@@ -7,6 +7,7 @@ from .models import (
     TicketAttachment,
     TicketCategory,
     TicketComment,
+    TicketRelation,
     TicketStatusHistory,
 )
 
@@ -26,6 +27,12 @@ class CannedResponseAdmin(admin.ModelAdmin):
     list_display = ('title', 'sort_order', 'is_active')
     list_filter = ('is_active',)
     search_fields = ('title', 'body')
+
+
+@admin.register(TicketRelation)
+class TicketRelationAdmin(admin.ModelAdmin):
+    list_display = ('ticket_low', 'ticket_high', 'relation_type', 'created_by', 'created_at')
+    list_filter = ('relation_type',)
 
 
 class TicketAssignmentInline(admin.TabularInline):

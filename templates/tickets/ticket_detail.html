@@ -70,6 +70,30 @@
       </section>
     {% endif %}
 
+    <section class="ticket-detail__section">
+      <h2>Related tickets</h2>
+      {% if related_tickets %}
+        <ul class="related-ticket-list">
+          {% for row in related_tickets %}
+            <li class="related-ticket-list__item">
+              <span class="badge badge--muted">{{ row.relation_type_label }}</span>
+              <a href="{% url 'tickets:detail' row.other.pk %}">#{{ row.other.pk }} — {{ row.other.title }}</a>
+              <span class="muted">({{ row.other.status }})</span>
+              {% if row.note %}<span class="muted">· {{ row.note }}</span>{% endif %}
+              {% if user.is_administrator %}
+                <form class="related-ticket-list__unlink" method="post" action="{% url 'tickets:relation_remove' ticket.pk row.relation.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn--ghost btn--small">Unlink</button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No related or duplicate tickets linked yet.</p>
+      {% endif %}
+    </section>
+
     {% if user.is_administrator %}
       <section class="ticket-detail__section ticket-admin">
         <h2>Administrator actions</h2>
@@ -106,6 +130,20 @@
               {% endif %}
             </div>
             <button type="submit" class="btn btn--primary">Assign</button>
+          </form>
+
+          <form class="card card--admin" method="post" action="{% url 'tickets:relation_add' ticket.pk %}">
+            {% csrf_token %}
+            <h3 class="ticket-admin__form-title">Link related ticket</h3>
+            <p class="muted ticket-admin__hint">Connect a related or duplicate ticket by ID</p>
+            {% for field in relation_form %}
+              <div class="form-row">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<span class="form-error">{{ field.errors.0 }}</span>{% endif %}
+              </div>
+            {% endfor %}
+            <button type="submit" class="btn btn--primary">Link ticket</button>
           </form>
 
           <form class="card card--admin card--admin-wide" method="post" action="{% url 'tickets:comment_add' ticket.pk %}">

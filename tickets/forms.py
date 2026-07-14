@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from core.models import Location
 from devices.models import Device
 
-from .models import CannedResponse, PriorityLevel, Ticket, TicketCategory
+from .models import CannedResponse, PriorityLevel, Ticket, TicketCategory, TicketRelation
 
 User = get_user_model()
 
@@ -125,3 +125,47 @@ class TicketCommentForm(forms.Form):
         initial=True,
         required=False,
     )
+
+
+class TicketRelationForm(forms.Form):
+    """Administrator: link this ticket to another by ID."""
+
+    related_ticket_id = forms.IntegerField(
+        label='Ticket ID',
+        min_value=1,
+        widget=forms.NumberInput(attrs={'placeholder': 'e.g. 42', 'min': 1}),
+    )
+    relation_type = forms.ChoiceField(
+        label='Relationship',
+        choices=TicketRelation.RelationType.choices,
+        initial=TicketRelation.RelationType.RELATED,
+    )
+    note = forms.CharField(
+        label='Note',
+        required=False,
+        max_length=255,
+        widget=forms.TextInput(attrs={'placeholder': 'Optional'}),
+    )
+
+    def __init__(self, *args, source_ticket=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.source_ticket = source_ticket
+
+    def clean_related_ticket_id(self):
+        pk = self.cleaned_data['related_ticket_id']
+        if self.source_ticket and pk == self.source_ticket.pk:
+            raise forms.ValidationError('Cannot link a ticket to itself.')
+        other = Ticket.objects.filter(pk=pk).first()
+        if other is None:
+            raise forms.ValidationError('No ticket found with that ID.')
+        self.cleaned_data['_related_ticket'] = other
+        return pk
+
+    def clean(self):
+        cleaned = super().clean()
+        other = cleaned.get('_related_ticket')
+        if other is None and 'related_ticket_id' in cleaned:
+            # clean_related_ticket_id already ran; reload if needed
+            other = Ticket.objects.filter(pk=cleaned['related_ticket_id']).first()
+            cleaned['_related_ticket'] = other
+        return cleaned

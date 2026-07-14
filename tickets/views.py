@@ -22,17 +22,19 @@ from .forms import (
     TicketAssignForm,
     TicketCommentForm,
     TicketForm,
+    TicketRelationForm,
 )
 from . import email_updates
 from .attachment_service import save_ticket_attachments
 from .attachment_validation import attachment_accept_attribute, attachment_help_text, validate_attachment_files
-from .models import CannedResponse, Ticket, TicketAssignment, TicketAttachment, TicketComment
+from .models import CannedResponse, Ticket, TicketAssignment, TicketAttachment, TicketComment, TicketRelation
 from .ticket_access import user_can_access_ticket
 from core.audit import build_ticket_activity_timeline
 
 from .services import apply_admin_ticket_update, assign_ticket, record_ticket_created
 from .sla_service import apply_ticket_due_on_create
 from .aging import TICKET_AGING_BUCKETS
+from .relation_service import link_tickets, related_ticket_rows
 
 
 class _Echo:
@@ -190,10 +192,12 @@ class TicketDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         ticket = self.object
         ctx['current_assignment'] = ticket.assignments.filter(is_current=True).first()
         ctx['activity_timeline'] = build_ticket_activity_timeline(ticket)
+        ctx['related_tickets'] = related_ticket_rows(ticket)
         if self.request.user.is_administrator:
             ctx['admin_update_form'] = TicketAdminUpdateForm(instance=ticket)
             ctx['assign_form'] = TicketAssignForm()
             ctx['comment_form'] = TicketCommentForm()
+            ctx['relation_form'] = TicketRelationForm(source_ticket=ticket)
             snippets = CannedResponse.objects.filter(is_active=True).order_by('sort_order', 'title')
             ctx['canned_responses'] = snippets
             ctx['canned_responses_payload'] = [
@@ -289,6 +293,51 @@ class TicketCommentAddView(AdminRequiredMixin, View):
             messages.success(request, 'Comment added.')
         else:
             messages.error(request, 'Could not add comment.')
+        return redirect('tickets:detail', pk=pk)
+
+
+class TicketRelationAddView(AdminRequiredMixin, View):
+    """POST: link this ticket to another (related or duplicate)."""
+
+    def post(self, request, pk):
+        ticket = get_object_or_404(Ticket, pk=pk)
+        form = TicketRelationForm(request.POST, source_ticket=ticket)
+        if form.is_valid():
+            other = form.cleaned_data['_related_ticket']
+            link_tickets(
+                ticket,
+                other,
+                relation_type=form.cleaned_data['relation_type'],
+                created_by=request.user,
+                note=form.cleaned_data.get('note') or '',
+            )
+            messages.success(
+                request,
+                f'Linked to ticket #{other.pk} ({form.cleaned_data["relation_type"]}).',
+            )
+        else:
+            for err in form.errors.values():
+                for msg in err:
+                    messages.error(request, msg)
+                    break
+                break
+            if not form.errors:
+                messages.error(request, 'Could not link tickets.')
+        return redirect('tickets:detail', pk=pk)
+
+
+class TicketRelationRemoveView(AdminRequiredMixin, View):
+    """POST: remove a ticket link from the current ticket's detail page."""
+
+    def post(self, request, pk, relation_pk):
+        ticket = get_object_or_404(Ticket, pk=pk)
+        relation = get_object_or_404(TicketRelation, pk=relation_pk)
+        if ticket.pk not in (relation.ticket_low_id, relation.ticket_high_id):
+            messages.error(request, 'That link does not belong to this ticket.')
+            return redirect('tickets:detail', pk=pk)
+        other = relation.other_ticket(ticket)
+        relation.delete()
+        messages.success(request, f'Removed link to ticket #{other.pk}.')
         return redirect('tickets:detail', pk=pk)
 
 

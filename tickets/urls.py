@@ -24,6 +24,8 @@ from .views import (
     TicketDetailView,
     TicketExportCsvView,
     TicketListView,
+    TicketRelationAddView,
+    TicketRelationRemoveView,
 )
 
 app_name = 'tickets'
@@ -53,5 +55,11 @@ urlpatterns = [
     path('<int:pk>/admin/update/', TicketAdminUpdateView.as_view(), name='admin_update'),
     path('<int:pk>/assign/', TicketAssignView.as_view(), name='assign'),
     path('<int:pk>/comment/', TicketCommentAddView.as_view(), name='comment_add'),
+    path('<int:pk>/relations/add/', TicketRelationAddView.as_view(), name='relation_add'),
+    path(
+        '<int:pk>/relations/<int:relation_pk>/remove/',
+        TicketRelationRemoveView.as_view(),
+        name='relation_remove',
+    ),
     path('<int:pk>/', TicketDetailView.as_view(), name='detail'),
 ]

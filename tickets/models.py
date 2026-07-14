@@ -117,6 +117,62 @@ class Ticket(models.Model):
         return ticket_is_overdue(self)
 
 
+class TicketRelation(models.Model):
+    """Undirected link between two tickets (related or duplicate)."""
+
+    class RelationType(models.TextChoices):
+        RELATED = 'related', 'Related'
+        DUPLICATE = 'duplicate', 'Duplicate'
+
+    ticket_low = models.ForeignKey(
+        Ticket,
+        on_delete=models.CASCADE,
+        related_name='relations_as_low',
+    )
+    ticket_high = models.ForeignKey(
+        Ticket,
+        on_delete=models.CASCADE,
+        related_name='relations_as_high',
+    )
+    relation_type = models.CharField(
+        max_length=20,
+        choices=RelationType.choices,
+        default=RelationType.RELATED,
+    )
+    note = models.CharField(max_length=255, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='ticket_relations_created',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'tickets_ticketrelation'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ticket_low', 'ticket_high'],
+                name='tickets_ticketrelation_unique_pair',
+            ),
+            models.CheckConstraint(
+                check=models.Q(ticket_low_id__lt=models.F('ticket_high_id')),
+                name='tickets_ticketrelation_low_lt_high',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['ticket_low']),
+            models.Index(fields=['ticket_high']),
+        ]
+
+    def __str__(self):
+        return f'{self.ticket_low_id} ↔ {self.ticket_high_id} ({self.relation_type})'
+
+    def other_ticket(self, ticket: Ticket) -> Ticket:
+        if ticket.pk == self.ticket_low_id:
+            return self.ticket_high
+        return self.ticket_low
+
+
 class TicketAssignment(models.Model):
     """Assignment of a ticket to IT personnel (FR-18, FR-37)."""
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='assignments')
