@@ -56,6 +56,15 @@
           </select>
         </label>
         <label class="ticket-filters__field">
+          <span class="ticket-filters__label">Location</span>
+          <select name="location">
+            <option value="">Any</option>
+            {% for loc in filter_locations %}
+              <option value="{{ loc.pk }}" {% if request.GET.location == loc.pk|stringformat:"s" %}selected{% endif %}>{{ loc.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="ticket-filters__field">
           <span class="ticket-filters__label">Assigned</span>
           <select name="assigned">
             <option value="">Anyone</option>
@@ -87,9 +96,52 @@
       </div>
       <div class="ticket-filters__actions">
         <button type="submit" class="btn btn--primary">Apply filters</button>
-        <a class="btn btn--ghost" href="{% url 'tickets:list' %}">Clear</a>
+        <a class="btn btn--ghost" href="{% url 'tickets:list' %}?skip_default=1">Clear</a>
       </div>
     </form>
+
+    {% if saved_filters or can_save_current_filter %}
+      <section class="saved-filters" aria-label="Saved ticket filters">
+        {% if saved_filters %}
+          <p class="saved-filters__heading">Saved filters</p>
+          <ul class="saved-filters__list">
+            {% for sf in saved_filters %}
+              <li class="saved-filters__item">
+                <a href="{{ sf.apply_url }}">{{ sf.name }}</a>
+                {% if sf.is_default %}<span class="badge badge--muted">Default</span>{% endif %}
+                {% if not sf.is_default %}
+                  <form method="post" action="{% url 'tickets:filter_set_default' sf.pk %}" class="saved-filters__inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn--ghost btn--small">Set default</button>
+                  </form>
+                {% endif %}
+                <form method="post" action="{% url 'tickets:filter_delete' sf.pk %}" class="saved-filters__inline-form">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn--ghost btn--small">Delete</button>
+                </form>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% if can_save_current_filter %}
+          <form class="saved-filters__save" method="post" action="{% url 'tickets:filter_save' %}">
+            {% csrf_token %}
+            {% for key, value in current_filter_params.items %}
+              <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
+            <label class="saved-filters__name-field">
+              <span class="ticket-filters__label">Save current filters as</span>
+              {{ save_filter_form.name }}
+            </label>
+            <label class="checkbox-inline">
+              {{ save_filter_form.is_default }}
+              {{ save_filter_form.is_default.label }}
+            </label>
+            <button type="submit" class="btn btn--secondary">Save filter</button>
+          </form>
+        {% endif %}
+      </section>
+    {% endif %}
   {% endif %}
 
   {% if tickets %}

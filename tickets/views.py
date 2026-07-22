@@ -18,6 +18,7 @@ from .csv_io import EXPORT_FIELDNAMES, iter_export_rows
 from .list_queryset import build_ticket_list_queryset
 
 from .forms import (
+    SavedTicketFilterForm,
     TicketAdminUpdateForm,
     TicketAssignForm,
     TicketCommentForm,
@@ -27,14 +28,32 @@ from .forms import (
 from . import email_updates
 from .attachment_service import save_ticket_attachments
 from .attachment_validation import attachment_accept_attribute, attachment_help_text, validate_attachment_files
-from .models import CannedResponse, Ticket, TicketAssignment, TicketAttachment, TicketComment, TicketRelation
+from .models import (
+    CannedResponse,
+    SavedTicketFilter,
+    Ticket,
+    TicketAssignment,
+    TicketAttachment,
+    TicketComment,
+    TicketRelation,
+)
 from .ticket_access import user_can_access_ticket
 from core.audit import build_ticket_activity_timeline
+from core.models import Location
 
 from .services import apply_admin_ticket_update, assign_ticket, record_ticket_created
 from .sla_service import apply_ticket_due_on_create
 from .aging import TICKET_AGING_BUCKETS
 from .relation_service import link_tickets, related_ticket_rows
+from .saved_filter_service import (
+    default_ticket_list_url,
+    extract_filter_params,
+    has_active_filters,
+    params_to_querystring,
+    save_ticket_filter,
+    saved_filter_list_url,
+    set_default_saved_filter,
+)
 
 
 class _Echo:
@@ -72,6 +91,17 @@ class TicketListView(LoginRequiredMixin, ListView):
     context_object_name = 'tickets'
     paginate_by = 25
 
+    def get(self, request, *args, **kwargs):
+        if (
+            request.user.is_administrator
+            and request.GET.get('skip_default') != '1'
+            and not has_active_filters(request.GET)
+        ):
+            default_url = default_ticket_list_url(request.user)
+            if default_url and default_url != request.get_full_path():
+                return redirect(default_url)
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         return build_ticket_list_queryset(self.request)
 
@@ -82,6 +112,8 @@ class TicketListView(LoginRequiredMixin, ListView):
         get = self.request.GET.copy()
         if 'page' in get:
             del get['page']
+        if 'skip_default' in get:
+            del get['skip_default']
         ctx['filter_query'] = get.urlencode()
         if user.is_administrator:
             from django.contrib.auth import get_user_model
@@ -90,11 +122,21 @@ class TicketListView(LoginRequiredMixin, ListView):
 
             ctx['filter_categories'] = TicketCategory.objects.all()
             ctx['filter_priorities'] = PriorityLevel.objects.all()
+            ctx['filter_locations'] = Location.objects.order_by('name')
             ctx['filter_users'] = get_user_model().objects.filter(is_active=True).order_by(
                 'username'
             )
             ctx['status_choices'] = Ticket.Status.choices
             ctx['aging_filter_label'] = _aging_filter_label(self.request.GET)
+            saved = list(
+                SavedTicketFilter.objects.filter(user=user).order_by('name')
+            )
+            for item in saved:
+                item.apply_url = saved_filter_list_url(item)
+            ctx['saved_filters'] = saved
+            ctx['save_filter_form'] = SavedTicketFilterForm()
+            ctx['current_filter_params'] = extract_filter_params(self.request.GET)
+            ctx['can_save_current_filter'] = bool(ctx['current_filter_params'])
         return ctx
 
 
@@ -107,6 +149,49 @@ def _aging_filter_label(get_params) -> str:
     if raw.isdigit() and int(raw) > 0:
         return f'Open tickets ≥ {raw} days old'
     return ''
+
+
+class SavedTicketFilterCreateView(AdminRequiredMixin, View):
+    """POST: save the current list filters under a name for this admin."""
+
+    def post(self, request):
+        form = SavedTicketFilterForm(request.POST)
+        params = extract_filter_params(request.POST)
+        if not params:
+            # Fall back to query string if posted without hidden fields
+            params = extract_filter_params(request.GET)
+        if form.is_valid() and params:
+            save_ticket_filter(
+                user=request.user,
+                name=form.cleaned_data['name'],
+                params=params,
+                is_default=form.cleaned_data['is_default'],
+            )
+            messages.success(request, f'Saved filter “{form.cleaned_data["name"]}”.')
+            qs = params_to_querystring(params)
+            return redirect(f'{reverse("tickets:list")}?{qs}' if qs else 'tickets:list')
+        if not params:
+            messages.error(request, 'Apply at least one filter before saving.')
+        else:
+            messages.error(request, 'Could not save filter. Enter a name.')
+        return redirect('tickets:list')
+
+
+class SavedTicketFilterDeleteView(AdminRequiredMixin, View):
+    def post(self, request, pk):
+        saved = get_object_or_404(SavedTicketFilter, pk=pk, user=request.user)
+        name = saved.name
+        saved.delete()
+        messages.success(request, f'Deleted saved filter “{name}”.')
+        return redirect('tickets:list')
+
+
+class SavedTicketFilterSetDefaultView(AdminRequiredMixin, View):
+    def post(self, request, pk):
+        saved = get_object_or_404(SavedTicketFilter, pk=pk, user=request.user)
+        set_default_saved_filter(user=request.user, saved=saved)
+        messages.success(request, f'“{saved.name}” is now your default ticket filter.')
+        return redirect(saved_filter_list_url(saved))
 
 
 class TicketCreateView(LoginRequiredMixin, CreateView):

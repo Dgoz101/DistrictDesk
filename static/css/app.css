@@ -507,6 +507,58 @@ button:focus-visible,
   align-items: center;
 }
 
+.saved-filters {
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+}
+
+.saved-filters__heading {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.saved-filters__list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.saved-filters__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.saved-filters__inline-form {
+  display: inline;
+  margin: 0;
+}
+
+.saved-filters__save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.saved-filters__name-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.saved-filters__name-field input {
+  min-width: 14rem;
+}
+
 .ticket-admin__grid {
   display: grid;
   gap: 1rem;

@@ -16,6 +16,9 @@ from .settings_views import (
     TicketSettingsHubView,
 )
 from .views import (
+    SavedTicketFilterCreateView,
+    SavedTicketFilterDeleteView,
+    SavedTicketFilterSetDefaultView,
     TicketAdminUpdateView,
     TicketAssignView,
     TicketAttachmentDownloadView,
@@ -45,6 +48,13 @@ urlpatterns = [
     path('settings/canned/<int:pk>/edit/', CannedResponseUpdateView.as_view(), name='canned_edit'),
     path('settings/canned/<int:pk>/delete/', CannedResponseDeleteView.as_view(), name='canned_delete'),
     path('export.csv', TicketExportCsvView.as_view(), name='export_csv'),
+    path('filters/save/', SavedTicketFilterCreateView.as_view(), name='filter_save'),
+    path('filters/<int:pk>/delete/', SavedTicketFilterDeleteView.as_view(), name='filter_delete'),
+    path(
+        'filters/<int:pk>/set-default/',
+        SavedTicketFilterSetDefaultView.as_view(),
+        name='filter_set_default',
+    ),
     path('', TicketListView.as_view(), name='list'),
     path('new/', TicketCreateView.as_view(), name='create'),
     path(

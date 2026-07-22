@@ -169,3 +169,18 @@ class TicketRelationForm(forms.Form):
             other = Ticket.objects.filter(pk=cleaned['related_ticket_id']).first()
             cleaned['_related_ticket'] = other
         return cleaned
+
+
+class SavedTicketFilterForm(forms.Form):
+    """Save the current ticket list filters under a name."""
+
+    name = forms.CharField(
+        label='Filter name',
+        max_length=100,
+        widget=forms.TextInput(attrs={'placeholder': 'e.g. Library building'}),
+    )
+    is_default = forms.BooleanField(
+        label='Use as my default (apply on login and ticket list)',
+        required=False,
+        initial=False,
+    )

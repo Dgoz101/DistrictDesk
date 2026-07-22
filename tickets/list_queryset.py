@@ -37,6 +37,10 @@ def _apply_admin_list_filters(qs, params):
     if priority:
         qs = qs.filter(priority_id=priority)
 
+    location = params.get('location')
+    if location:
+        qs = qs.filter(location_id=location)
+
     assigned = params.get('assigned')
     if assigned:
         qs = qs.filter(

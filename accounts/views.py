@@ -20,6 +20,17 @@ class DistrictDeskLoginView(LoginView):
     authentication_form = EmailLoginForm
     redirect_authenticated_user = True
 
+    def get_success_url(self):
+        """Admins with a default saved ticket filter land on that filtered list."""
+        user = self.request.user
+        if getattr(user, 'is_administrator', False):
+            from tickets.saved_filter_service import default_ticket_list_url
+
+            url = default_ticket_list_url(user)
+            if url:
+                return url
+        return super().get_success_url()
+
 
 class DistrictDeskLogoutView(LogoutView):
     next_page = reverse_lazy('home')

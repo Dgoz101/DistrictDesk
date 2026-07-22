@@ -215,6 +215,42 @@ class CannedResponse(models.Model):
         return self.title
 
 
+class SavedTicketFilter(models.Model):
+    """Per-user saved ticket list filters (admin/tech presets, e.g. a building)."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='saved_ticket_filters',
+    )
+    name = models.CharField(max_length=100)
+    params = models.JSONField(
+        default=dict,
+        help_text='Ticket list query parameters (location, status, sort, etc.).',
+    )
+    is_default = models.BooleanField(
+        default=False,
+        help_text='When set, apply this filter on login and when opening the ticket list.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'tickets_savedticketfilter'
+        ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'name'],
+                name='tickets_savedticketfilter_user_name_uniq',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['user', 'is_default']),
+        ]
+
+    def __str__(self):
+        return f'{self.name} ({self.user_id})'
+
+
 class TicketComment(models.Model):
     """Internal notes or comments on a ticket (FR-21)."""
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='comments')

@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import (
     CannedResponse,
     PriorityLevel,
+    SavedTicketFilter,
     Ticket,
     TicketAssignment,
     TicketAttachment,
@@ -33,6 +34,13 @@ class CannedResponseAdmin(admin.ModelAdmin):
 class TicketRelationAdmin(admin.ModelAdmin):
     list_display = ('ticket_low', 'ticket_high', 'relation_type', 'created_by', 'created_at')
     list_filter = ('relation_type',)
+
+
+@admin.register(SavedTicketFilter)
+class SavedTicketFilterAdmin(admin.ModelAdmin):
+    list_display = ('name', 'user', 'is_default', 'updated_at')
+    list_filter = ('is_default',)
+    search_fields = ('name', 'user__email', 'user__username')
 
 
 class TicketAssignmentInline(admin.TabularInline):
